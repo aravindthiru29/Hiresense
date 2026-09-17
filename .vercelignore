@@ -1,0 +1,25 @@
+# Version control
+.git/
+.gitignore
+
+# Tests & caches
+tests/
+hiresense-backend/tests/
+hiresense-backend/.pytest_cache/
+hiresense-backend/instance/
+hiresense-backend/uploads/
+hiresense-backend/*.db
+.pytest_cache/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local dev environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

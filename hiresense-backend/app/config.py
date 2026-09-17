@@ -14,8 +14,12 @@ class Config:
         hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 24))
     )
 
+    # Serverless runtime detection (Vercel, AWS Lambda, etc.)
+    IS_SERVERLESS = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+
     # Database URL with postgres:// -> postgresql:// fix
-    raw_db_url = os.environ.get('DATABASE_URL', 'sqlite:///hiresense.db')
+    default_db = 'sqlite:////tmp/hiresense.db' if IS_SERVERLESS else 'sqlite:///hiresense.db'
+    raw_db_url = os.environ.get('DATABASE_URL', default_db)
     if raw_db_url.startswith('postgres://'):
         raw_db_url = raw_db_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = raw_db_url
@@ -23,10 +27,17 @@ class Config:
 
     # CORS configuration
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
-    CORS_ORIGINS = [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:5173']
+    CORS_ORIGINS = [
+        FRONTEND_URL,
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        r'https://.*\.vercel\.app',
+    ]
 
     # File uploads
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, os.environ.get('UPLOAD_FOLDER', 'uploads/resumes'))
+    default_upload = '/tmp/uploads/resumes' if IS_SERVERLESS else os.path.join(BASE_DIR, 'uploads/resumes')
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', default_upload)
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 10 * 1024 * 1024))  # 10 MB
     ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc'}
 

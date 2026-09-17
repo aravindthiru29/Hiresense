@@ -23,8 +23,10 @@ export class ApiError extends Error {
   }
 }
 
-// Configurable base URL: reads Vite env variable or defaults to Flask backend port 5000
-const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api'
+// Configurable base URL: reads Vite env variable or defaults to relative /api in prod (Vercel) and localhost:5000 in dev
+const BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
+  ((import.meta as any).env?.PROD ? '/api' : 'http://localhost:5000/api')
 const TOKEN_KEY = 'hiresense_access_token'
 const USER_KEY = 'hiresense_user'
 

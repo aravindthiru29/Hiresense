@@ -69,6 +69,39 @@ def create_app(config_name: str = 'development') -> Flask:
     app.register_blueprint(github_bp)
     app.register_blueprint(progress_bp)
 
+    # Root & API Discovery Endpoints
+    @app.route('/', methods=['GET'])
+    def root():
+        return jsonify({
+            'status': 'online',
+            'service': 'HireSense AI Platform API',
+            'version': '1.0.0',
+            'docs': '/api'
+        }), 200
+
+    @app.route('/api', methods=['GET'])
+    @app.route('/api/', methods=['GET'])
+    def api_root():
+        return jsonify({
+            'status': 'online',
+            'service': 'HireSense AI REST API',
+            'version': '1.0.0',
+            'endpoints': {
+                'health': '/api/health',
+                'auth': '/api/auth',
+                'resume': '/api/resume',
+                'dashboard': '/api/dashboard',
+                'assessments': '/api/assessments',
+                'interviews': '/api/interviews',
+                'viva': '/api/viva',
+                'readiness': '/api/readiness',
+                'roadmap': '/api/roadmap',
+                'reports': '/api/reports',
+                'github': '/api/github',
+                'progress': '/api/progress'
+            }
+        }), 200
+
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
     def health_check():
