@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { interviewApi } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -57,14 +58,35 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
 
   const currentRoundData = questionsByRound[selectedRound]
 
-  const handleEvaluate = () => {
+  const handleEvaluate = async () => {
     if (!userAnswer.trim()) {
       alert('Please type an answer to get AI feedback.')
       return
     }
     setIsEvaluating(true)
-    setTimeout(() => {
-      setIsEvaluating(false)
+    try {
+      const res = await interviewApi.respond(
+        1,
+        currentRoundData.question,
+        userAnswer,
+        selectedRound
+      )
+      if (res && res.score) {
+        setEvaluationResult({
+          score: res.score,
+          feedback: res.feedback || 'Good articulation and technical depth.',
+          rubric: res.rubric && res.rubric.length > 0
+            ? (res.rubric as any[]).map((r: any) => [r.criterion || 'Criterion', Number(r.score) || 90])
+            : [
+                ['Clarity & Delivery', 94],
+                ['Technical Depth', 90],
+                ['STAR / Structure', 92],
+                ['Measurable Outcomes', 92],
+              ],
+        })
+      }
+    } catch (err) {
+      console.warn('Backend interview evaluation offline, using local simulation:', err)
       setEvaluationResult({
         score: 92,
         feedback:
@@ -76,7 +98,9 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
           ['Measurable Outcomes', 92],
         ],
       })
-    }, 1000)
+    } finally {
+      setIsEvaluating(false)
+    }
   }
 
   return (

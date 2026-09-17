@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { roadmapApi } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -13,10 +14,37 @@ export function RoadmapPage({ onNavigate }: RoadmapPageProps) {
     'w2-1',
   ])
 
+  useEffect(() => {
+    roadmapApi.getRoadmap()
+      .then(data => {
+        if (data && data.sprints) {
+          const completedCodes: string[] = []
+          data.sprints.forEach(s => {
+            s.tasks?.forEach(t => {
+              if (t.is_completed) {
+                completedCodes.push(t.task_code)
+              }
+            })
+          })
+          if (completedCodes.length > 0) {
+            setCompletedTasks(completedCodes)
+          }
+        }
+      })
+      .catch(() => {
+        // Backend offline or local default
+      })
+  }, [])
+
   const toggleTask = (id: string) => {
+    const isNowCompleted = !completedTasks.includes(id)
     setCompletedTasks(prev =>
       prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id],
     )
+    const numericId = parseInt(id.replace(/[^0-9]/g, ''), 10) || 1
+    roadmapApi.toggleTask(numericId, isNowCompleted).catch(() => {
+      // Offline fallback
+    })
   }
 
   const sprints = [

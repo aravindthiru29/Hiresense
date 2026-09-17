@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { profileApi } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -19,6 +20,46 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   )
   const [githubHandle, setGithubHandle] = useState('github.com/aravind-t')
   const [email, setEmail] = useState('aravind.t@vitstudent.ac.in')
+
+  useEffect(() => {
+    profileApi.getProfile()
+      .then(p => {
+        if (p) {
+          if (p.full_name) setFullName(p.full_name)
+          if (p.college) setCollege(p.college)
+          if (p.degree) setDegree(p.degree)
+          if (p.branch) setBranch(p.branch)
+          if (p.graduation_year) setGradYear(String(p.graduation_year))
+          if (p.target_role) setTargetRole(p.target_role)
+          if (p.bio) setBio(p.bio)
+          if (p.github_handle) setGithubHandle(p.github_handle)
+          if (p.email) setEmail(p.email)
+        }
+      })
+      .catch(() => {
+        // Backend offline or local default
+      })
+  }, [])
+
+  const handleToggleEdit = async () => {
+    if (isEditing) {
+      try {
+        await profileApi.updateProfile({
+          full_name: fullName,
+          college,
+          degree,
+          branch,
+          graduation_year: parseInt(gradYear, 10) || 2026,
+          target_role: targetRole,
+          bio,
+          github_handle: githubHandle,
+        })
+      } catch (err) {
+        console.warn('Backend profile update offline, saved locally:', err)
+      }
+    }
+    setIsEditing(!isEditing)
+  }
 
   const verifiedSkills = [
     { name: 'Python', resumeClaim: 'Advanced', demonstrated: 'Intermediate', status: 'developing', score: 86 },
@@ -74,7 +115,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
             <button
               className={`btn ${isEditing ? '' : 'btn-secondary'} btn-sm`}
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={handleToggleEdit}
             >
               {isEditing ? 'Save Changes ✓' : 'Edit Profile ✎'}
             </button>

@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent } from 'react'
+import { useState, useEffect, type ChangeEvent } from 'react'
+import { resumeApi } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -11,18 +12,65 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
   const [targetRole, setTargetRole] = useState('Software Developer')
   const [resumeFileName, setResumeFileName] = useState('Aravind_T_Resume.pdf')
   const [resumeFileSize, setResumeFileSize] = useState('2.4 MB')
+  const [atsScore, setAtsScore] = useState(87)
+  const [subScores, setSubScores] = useState({
+    impact: 79,
+    skills: 88,
+    brevity: 86,
+    style: 96,
+  })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [completedFixes, setCompletedFixes] = useState<number[]>([])
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    resumeApi.getAnalysis()
+      .then(analysis => {
+        if (analysis) {
+          if (analysis.ats_score) setAtsScore(analysis.ats_score)
+          if (analysis.filename) setResumeFileName(analysis.filename)
+          if (analysis.file_size_formatted) setResumeFileSize(analysis.file_size_formatted)
+          if (analysis.role) setTargetRole(analysis.role)
+          if (analysis.sub_scores) {
+            setSubScores({
+              impact: analysis.sub_scores.impact || 79,
+              skills: analysis.sub_scores.skills || 88,
+              brevity: analysis.sub_scores.brevity || 86,
+              style: analysis.sub_scores.style || 96,
+            })
+          }
+        }
+      })
+      .catch(() => {
+        // Backend offline or local simulation fallback
+      })
+  }, [])
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setResumeFileName(file.name)
       setResumeFileSize(`${(file.size / 1024 / 1024).toFixed(1)} MB`)
       setIsAnalyzing(true)
-      setTimeout(() => {
+      try {
+        const result = await resumeApi.uploadResume(file)
+        if (result) {
+          if (result.ats_score) setAtsScore(result.ats_score)
+          if (result.filename) setResumeFileName(result.filename)
+          if (result.file_size_formatted) setResumeFileSize(result.file_size_formatted)
+          if (result.sub_scores) {
+            setSubScores({
+              impact: result.sub_scores.impact || 79,
+              skills: result.sub_scores.skills || 88,
+              brevity: result.sub_scores.brevity || 86,
+              style: result.sub_scores.style || 96,
+            })
+          }
+        }
+      } catch (err) {
+        console.warn('Backend upload offline, using local simulation:', err)
+      } finally {
         setIsAnalyzing(false)
-      }, 1000)
+      }
     }
   }
 
@@ -124,7 +172,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               <h3 style={{ fontSize: '20px', margin: 0 }}>Resume Signal &amp; ATS Audit</h3>
             </div>
             <div className="pill-row" style={{ margin: 0 }}>
-              <span className="pill green">✓ ATS Ready (87/100)</span>
+              <span className="pill green">✓ ATS Ready ({atsScore}/100)</span>
               <span className="pill">PDF · 1-Column Format</span>
             </div>
           </div>
@@ -198,7 +246,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               <span className="badge badge-green">Top 10%</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0 4px' }}>
-              <span className="score-large" style={{ margin: 0 }}>87</span>
+              <span className="score-large" style={{ margin: 0 }}>{atsScore}</span>
               <span style={{ fontSize: '1rem', color: 'var(--text-3)' }}>/ 100</span>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: 0 }}>
@@ -208,10 +256,10 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
 
           <div className="meter-list" style={{ marginTop: '14px' }}>
             {[
-              { label: 'Keyword Alignment', value: 88 },
-              { label: 'Impact & Quantification', value: 79 },
-              { label: 'Technical Depth', value: 86 },
-              { label: 'ATS Format Compliance', value: 96 },
+              { label: 'Keyword Alignment', value: subScores.skills },
+              { label: 'Impact & Quantification', value: subScores.impact },
+              { label: 'Technical Depth', value: subScores.brevity },
+              { label: 'ATS Format Compliance', value: subScores.style },
             ].map(({ label, value }) => (
               <div key={label} className="stack-row">
                 <div className="stack-label-row">

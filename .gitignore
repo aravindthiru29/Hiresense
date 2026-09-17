@@ -43,3 +43,17 @@ lerna-debug.log*
 *.bak
 .cache
 .vite
+
+# Python & Backend ignores
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.db
+.pytest_cache/
+venv/
+.venv/
+hiresense-backend/uploads/
+hiresense-backend/*.db
+hiresense-backend/.pytest_cache/
+
