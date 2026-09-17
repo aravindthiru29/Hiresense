@@ -21,6 +21,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [completedFixes, setCompletedFixes] = useState<number[]>([])
+  const [copiedId, setCopiedId] = useState<number | null>(null)
 
   useEffect(() => {
     resumeApi.getAnalysis()
@@ -74,10 +75,34 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
     }
   }
 
+  const handleRescan = async () => {
+    setIsAnalyzing(true)
+    try {
+      const analysis = await resumeApi.getAnalysis()
+      if (analysis && analysis.ats_score) {
+        setAtsScore(analysis.ats_score)
+      }
+    } catch {
+      // simulation
+    } finally {
+      setTimeout(() => setIsAnalyzing(false), 750)
+    }
+  }
+
+  const handleCopyBullet = (id: number, text: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(() => {})
+    }
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
   const toggleFix = (id: number) => {
-    setCompletedFixes(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id],
-    )
+    setCompletedFixes(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+      setAtsScore(Math.min(96, 87 + next.length * 2))
+      return next
+    })
   }
 
   const bulletOptimizations = [
@@ -210,12 +235,10 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               </label>
               <button
                 className="btn btn-sm"
-                onClick={() => {
-                  setIsAnalyzing(true)
-                  setTimeout(() => setIsAnalyzing(false), 900)
-                }}
+                onClick={handleRescan}
+                disabled={isAnalyzing}
               >
-                {isAnalyzing ? 'Analyzing...' : 'Re-scan ↺'}
+                {isAnalyzing ? 'Scanning Resume...' : 'Re-scan ↺'}
               </button>
             </div>
           </div>
@@ -445,10 +468,10 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
                   </p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                     <button
-                      className="btn btn-sm"
-                      onClick={() => alert(`Copied bullet for ${item.project} to clipboard!`)}
+                      className={`btn btn-sm ${copiedId === item.id ? 'btn-secondary' : ''}`}
+                      onClick={() => handleCopyBullet(item.id, item.improved)}
                     >
-                      Copy Bullet
+                      {copiedId === item.id ? 'Copied! ✓' : 'Copy Bullet'}
                     </button>
                     <span className="badge badge-green" style={{ alignSelf: 'center' }}>
                       Ready to Paste

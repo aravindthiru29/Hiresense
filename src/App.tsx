@@ -77,8 +77,8 @@ const assessmentQuestions = [
 ]
 
 function App() {
-  const [screen, setScreen] = useState<AuthScreen>('landing')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [screen, setScreen] = useState<AuthScreen>('home')
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
   const [onboardingStep, setOnboardingStep] = useState(1)
   const [fullName, setFullName] = useState('Aravind T')
   const [college, setCollege] = useState('VIT Vellore')
@@ -99,19 +99,13 @@ function App() {
   }
 
   const handlePrimaryCta = () => {
-    if (isAuthenticated) {
-      setScreen('dashboard')
-      return
-    }
-    setScreen('login')
+    setIsAuthenticated(true)
+    setScreen('home')
   }
 
   const handleLandingNavigate = (view: View) => {
-    if (isAuthenticated) {
-      setScreen(view)
-      return
-    }
-    setScreen('login')
+    setIsAuthenticated(true)
+    setScreen(view)
   }
 
   const toggleSkill = (skill: string) => {
@@ -151,7 +145,7 @@ function App() {
     return (
       <div className="hireSense-shell landing-mode">
         <SiteHeader
-          isAuthenticated={false}
+          isAuthenticated={isAuthenticated}
           activeScreen="landing"
           onOpenLogin={() => setScreen('login')}
           onOpenSignup={() => setScreen('signup')}
@@ -357,11 +351,13 @@ function App() {
       <main className="main-panel">
         <header className="topbar">
           <div className="topbar-left">
-            <span className="topbar-breadcrumb">HireSense</span>
+            <span className="topbar-breadcrumb" onClick={() => setScreen('home')} style={{ cursor: 'pointer' }}>HireSense</span>
             <span className="topbar-sep">/</span>
             <h1>{pageTitles[screen as View]}</h1>
           </div>
-          <button className="btn btn-secondary btn-sm">Live demo →</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setScreen('landing')}>
+            Landing Page ↗
+          </button>
         </header>
 
         <div className="page-body">
@@ -390,28 +386,28 @@ function SiteHeader({
 }: {
   isAuthenticated: boolean
   activeScreen: string
-  onOpenLogin: () => void
-  onOpenSignup: () => void
+  onOpenLogin?: () => void
+  onOpenSignup?: () => void
   onNavigate: (view: View) => void
   onHome: () => void
 }) {
   if (!isAuthenticated) {
     return (
       <header className="top-level-header">
-        <div className="header-brand" onClick={onHome}>
+        <div className="header-brand" onClick={onHome} style={{ cursor: 'pointer' }}>
           <span className="workspace-brand-mark">✦</span>
           <span>HireSense</span>
         </div>
 
         <nav className="top-nav" aria-label="Top navigation">
           <button className={activeScreen === 'landing' ? 'active' : ''} onClick={onHome}>Home</button>
-          <button className={activeScreen === 'features' ? 'active' : ''}>Features</button>
-          <button className={activeScreen === 'how-it-works' ? 'active' : ''}>How it works</button>
+          <button onClick={() => onNavigate('dashboard')}>Features</button>
+          <button onClick={() => onNavigate('roadmap')}>How it works</button>
         </nav>
 
         <div className="header-actions">
-          <button className="header-link" onClick={onOpenLogin}>Sign In</button>
-          <button className="header-cta" onClick={onOpenSignup}>Get Started</button>
+          <button className="header-link" onClick={onOpenLogin || (() => onNavigate('home'))}>Sign In</button>
+          <button className="header-cta" onClick={onOpenSignup || (() => onNavigate('home'))}>Open Workspace →</button>
         </div>
       </header>
     )
@@ -438,7 +434,9 @@ function SiteHeader({
       </nav>
 
       <div className="workspace-actions">
-        <div className="readiness-chip"><span>●</span> 92% ready</div>
+        <div className="readiness-chip" onClick={() => onNavigate('readiness')} style={{ cursor: 'pointer' }} title="View Placement Readiness">
+          <span>●</span> 92% ready
+        </div>
         <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">AT</button>
       </div>
     </header>
@@ -467,7 +465,9 @@ function WorkspaceNav({ view, onNavigate }: { view: View; onNavigate: (view: Vie
       </nav>
 
       <div className="workspace-actions">
-        <div className="readiness-chip"><span>●</span> 92% ready</div>
+        <div className="readiness-chip" onClick={() => onNavigate('readiness')} style={{ cursor: 'pointer' }} title="View Placement Readiness">
+          <span>●</span> 92% ready
+        </div>
         <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">AT</button>
       </div>
     </header>

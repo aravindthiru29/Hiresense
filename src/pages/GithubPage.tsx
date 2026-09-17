@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react'
+import { githubApi, type GitHubAuditProfile } from '../lib'
+
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
 interface GithubPageProps {
@@ -5,14 +8,40 @@ interface GithubPageProps {
 }
 
 export function GithubPage({ onNavigate }: GithubPageProps) {
-  const metrics = [
+  const [handle] = useState('aravind-t')
+  const [isAuditing, setIsAuditing] = useState(false)
+  const [auditData, setAuditData] = useState<GitHubAuditProfile | null>(null)
+
+  useEffect(() => {
+    githubApi.getProfileAudit()
+      .then(data => {
+        if (data) setAuditData(data)
+      })
+      .catch(() => {
+        // simulation fallback
+      })
+  }, [])
+
+  const handleRunAudit = async () => {
+    setIsAuditing(true)
+    try {
+      const data = await githubApi.analyzeProfile(handle)
+      if (data) setAuditData(data)
+    } catch {
+      // simulation fallback
+    } finally {
+      setTimeout(() => setIsAuditing(false), 700)
+    }
+  }
+
+  const metrics = auditData?.metrics || [
     { label: 'Architecture & Clean Code', value: '9.2/10', good: true, desc: 'Layered service structure & separation of concerns' },
     { label: 'Documentation & READMEs', value: '8.8/10', good: true, desc: 'Installation guides and architecture diagrams present' },
     { label: 'Test Coverage & CI/CD', value: '8.4/10', good: true, desc: 'PyTest and GitHub Actions workflow active in 2 repos' },
     { label: 'Commit Consistency', value: '8.9/10', good: true, desc: '420+ commits across last 12 months with clean messages' },
   ]
 
-  const auditedRepos = [
+  const auditedRepos = auditData?.audited_repositories || [
     {
       name: 'smart-crop-ai',
       stars: 14,
@@ -56,7 +85,14 @@ export function GithubPage({ onNavigate }: GithubPageProps) {
               <h3 style={{ margin: 0, fontSize: '19px' }}>GitHub Profile Signal Audit</h3>
             </div>
             <div className="pill-row" style={{ margin: 0 }}>
-              <span className="pill green">✓ @aravind-t Synced</span>
+              <button
+                className="btn btn-sm"
+                onClick={handleRunAudit}
+                disabled={isAuditing}
+                style={{ cursor: 'pointer' }}
+              >
+                {isAuditing ? 'Scanning GitHub...' : '✓ @aravind-t Synced ↺'}
+              </button>
               <span className="pill">18 Repositories Analyzed</span>
             </div>
           </div>

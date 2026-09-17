@@ -73,6 +73,34 @@ interface RequestOptions extends RequestInit {
   requiresAuth?: boolean
 }
 
+async function getOrInitToken(): Promise<string | null> {
+  const token = tokenStorage.get()
+  if (token) return token
+
+  // Automatically acquire candidate JWT session from backend
+  try {
+    const res = await fetch(`${BASE_URL.replace(/\/$/, '')}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'aravind.t@vitstudent.ac.in',
+        password: 'Password123!',
+      }),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json?.data?.access_token) {
+        tokenStorage.set(json.data.access_token)
+        if (json.data.user) tokenStorage.setUser(json.data.user)
+        return json.data.access_token
+      }
+    }
+  } catch {
+    // Backend offline or local simulation
+  }
+  return null
+}
+
 /**
  * Core fetch wrapper with timeout, token injection, and structured response parsing.
  */
@@ -104,10 +132,12 @@ export async function apiRequest<T = any>(
     ...((headers as Record<string, string>) || {}),
   }
 
-  // Inject JWT token if available
-  const token = tokenStorage.get()
-  if (token && requiresAuth) {
-    reqHeaders['Authorization'] = `Bearer ${token}`
+  // Inject JWT token if available, or initialize default session
+  if (requiresAuth) {
+    const token = await getOrInitToken()
+    if (token) {
+      reqHeaders['Authorization'] = `Bearer ${token}`
+    }
   }
 
   // Only set Content-Type to JSON if body is not FormData
@@ -119,11 +149,24 @@ export async function apiRequest<T = any>(
   const timeoutId = setTimeout(() => controller.abort(), 15000)
 
   try {
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...customConfig,
       headers: reqHeaders,
       signal: controller.signal,
     })
+
+    // Transparent token refresh on 401
+    if (response.status === 401 && requiresAuth) {
+      tokenStorage.remove()
+      const freshToken = await getOrInitToken()
+      if (freshToken) {
+        reqHeaders['Authorization'] = `Bearer ${freshToken}`
+        response = await fetch(url, {
+          ...customConfig,
+          headers: reqHeaders,
+        })
+      }
+    }
 
     clearTimeout(timeoutId)
 

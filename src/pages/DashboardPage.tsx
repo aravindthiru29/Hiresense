@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react'
+import { dashboardApi, type DashboardData } from '../lib'
+
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
 interface DashboardPageProps {
@@ -5,26 +8,40 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
+  const [dashData, setDashData] = useState<DashboardData | null>(null)
+
+  useEffect(() => {
+    dashboardApi.getDashboardData()
+      .then(data => {
+        if (data) setDashData(data)
+      })
+      .catch(() => {
+        // Backend offline or local simulation fallback
+      })
+  }, [])
+
   const handleNav = (view: View) => {
     if (onNavigate) {
       onNavigate(view)
     }
   }
 
+  const stats = dashData?.stats || [
+    { label: 'Placement readiness', value: '92%', delta: '+8% this month', good: true, to: 'readiness' as View },
+    { label: 'ATS resume score', value: '87/100', delta: 'Strong keyword fit', good: true, to: 'resume' as View },
+    { label: 'Mock interview score', value: '94%', delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
+  ]
+
   return (
     <div className="page-stack">
       {/* Top 3 KPI Cards */}
       <section className="stats-grid" style={{ marginTop: 0 }}>
-        {[
-          { label: 'Placement readiness', value: '92%', delta: '+8% this month', good: true, to: 'readiness' as View },
-          { label: 'ATS resume score', value: '87/100', delta: 'Strong keyword fit', good: true, to: 'resume' as View },
-          { label: 'Mock interview score', value: '94%', delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
-        ].map(({ label, value, delta, good, to }) => (
+        {stats.map(({ label, value, delta, good, to }) => (
           <article
             key={label}
             className="card"
             style={{ cursor: 'pointer' }}
-            onClick={() => handleNav(to)}
+            onClick={() => handleNav(to as View)}
           >
             <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               {label}
@@ -116,7 +133,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                 Mock Today
               </button>
             </li>
-            <li>
+            <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
                 <strong>Amazon SDE Internship Round</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
@@ -125,7 +142,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
               <span className="badge badge-amber">Tomorrow</span>
             </li>
-            <li>
+            <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
                 <strong>Flipkart / Swiggy Backend Evaluation</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
@@ -145,7 +162,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             </button>
           </div>
           <ul className="list">
-            <li>
+            <li style={{ cursor: 'pointer' }} onClick={() => handleNav('resume')}>
               <div>
                 <strong>Resume ATS Metrics</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
@@ -154,7 +171,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
               <span className="pill green">Ready to apply</span>
             </li>
-            <li>
+            <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
                 <strong>System Design Fundamentals</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
@@ -163,7 +180,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               </div>
               <span className="pill amber">Needs polish</span>
             </li>
-            <li>
+            <li style={{ cursor: 'pointer' }} onClick={() => handleNav('github')}>
               <div>
                 <strong>GitHub Portfolio READMEs</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>

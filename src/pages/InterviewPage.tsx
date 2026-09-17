@@ -56,19 +56,31 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
     },
   }
 
+  const sampleAnswers: Record<string, string> = {
+    behavioral:
+      'In our Smart Crop Monitoring project, we encountered an inference latency bottleneck exceeding 900ms. Taking initiative as project lead, I profiled the OpenCV pipeline, refactored image operations to use vectorized NumPy matrices, and optimized image resizing. This reduced API latency to sub-250ms and maintained 92.4% disease classification accuracy across 1,200+ samples.',
+    dsa:
+      'To optimize a database query joining two tables with 10M rows, I would first check the execution plan via EXPLAIN ANALYZE to identify sequential table scans. Next, I would create composite B-Tree indexes on the joining foreign keys, ensure data types strictly match to prevent implicit conversions, and apply range partitioning if the tables grow continuously.',
+    system:
+      'For a distributed rate limiter, I would utilize the Token Bucket or Sliding Window algorithm implemented in Redis. Redis Lua scripting guarantees atomic execution across distributed API gateways without costly distributed mutex locks, providing sub-5ms check times and fallback graceful degradation under spikes.',
+    project:
+      'In the Smart Crop Monitoring System, leaf imagery captured by field cameras is sent via Flask REST endpoints. The backend uses OpenCV for Gaussian blurring and HSV color masking before feeding features into a machine learning classification model. The system achieved 92.4% diagnostic precision with lightweight edge deployment.',
+  }
+
   const currentRoundData = questionsByRound[selectedRound]
 
   const handleEvaluate = async () => {
+    const textToSubmit = userAnswer.trim() || sampleAnswers[selectedRound]
     if (!userAnswer.trim()) {
-      alert('Please type an answer to get AI feedback.')
-      return
+      setUserAnswer(textToSubmit)
     }
+
     setIsEvaluating(true)
     try {
       const res = await interviewApi.respond(
         1,
         currentRoundData.question,
-        userAnswer,
+        textToSubmit,
         selectedRound
       )
       if (res && res.score) {
@@ -88,14 +100,14 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
     } catch (err) {
       console.warn('Backend interview evaluation offline, using local simulation:', err)
       setEvaluationResult({
-        score: 92,
+        score: 93,
         feedback:
-          'Excellent response! You established clear ownership, articulated technical trade-offs cleanly, and quantified your outcomes. To reach 96+, consider briefly mentioning edge-case fallback strategies.',
+          'Outstanding articulation! You framed the situation cleanly using STAR format, highlighted architectural trade-offs, and quantified your technical impact (+230ms latency, 92.4% accuracy). Strong signal for Tier-1 engineering rounds.',
         rubric: [
           ['Clarity & Delivery', 94],
-          ['Technical Depth', 90],
-          ['STAR / Structure', 92],
-          ['Measurable Outcomes', 92],
+          ['Technical Depth', 92],
+          ['STAR / Structure', 95],
+          ['Measurable Outcomes', 91],
         ],
       })
     } finally {
@@ -168,9 +180,18 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Your Response (Type or practice speaking):
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Your Response (Type or practice speaking):
+              </label>
+              <button
+                className="text-button underline"
+                style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 600 }}
+                onClick={() => setUserAnswer(sampleAnswers[selectedRound])}
+              >
+                Use Sample Answer ⚡
+              </button>
+            </div>
             <textarea
               value={userAnswer}
               onChange={e => setUserAnswer(e.target.value)}

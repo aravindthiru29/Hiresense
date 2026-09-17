@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { reportsApi, type FullReportDossier } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,20 +9,31 @@ interface ReportsPageProps {
 
 export function ReportsPage({ onNavigate }: ReportsPageProps) {
   const [isExporting, setIsExporting] = useState(false)
+  const [reportData, setReportData] = useState<FullReportDossier | null>(null)
+
+  useEffect(() => {
+    reportsApi.getFullReport()
+      .then(data => {
+        if (data) setReportData(data)
+      })
+      .catch(() => {
+        // simulation fallback
+      })
+  }, [])
 
   const handleExport = () => {
     setIsExporting(true)
     setTimeout(() => {
       setIsExporting(false)
-      alert('Placement Readiness Dossier successfully generated! PDF report download started.')
-    }, 1000)
+      window.print()
+    }, 500)
   }
 
   const agentScores = [
-    { agent: 'Resume Analyzer', score: '87 / 100', delta: '+6 pts', status: 'ATS Ready', to: 'resume' as View },
+    { agent: 'Resume Analyzer', score: reportData?.ats_score ? `${reportData.ats_score} / 100` : '87 / 100', delta: '+6 pts', status: 'ATS Ready', to: 'resume' as View },
     { agent: 'Mock Interview Coach', score: '94 / 100', delta: '+12 pts', status: 'STAR Confident', to: 'interview' as View },
     { agent: 'GitHub Intelligence', score: '91 / 100', delta: '+8 pts', status: 'Showcase Ready', to: 'github' as View },
-    { agent: 'Placement Readiness', score: '92 / 100', delta: '+8 pts', status: 'Top 8% in Pool', to: 'readiness' as View },
+    { agent: 'Placement Readiness', score: reportData?.readiness_score ? `${reportData.readiness_score} / 100` : '92 / 100', delta: '+8 pts', status: 'Top 8% in Pool', to: 'readiness' as View },
   ]
 
   return (

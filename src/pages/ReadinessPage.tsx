@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { readinessApi, type ReadinessOverview } from '../lib'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,6 +9,17 @@ interface ReadinessPageProps {
 
 export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
   const [checkedActions, setCheckedActions] = useState<number[]>([1])
+  const [readinessData, setReadinessData] = useState<ReadinessOverview | null>(null)
+
+  useEffect(() => {
+    readinessApi.getReadiness()
+      .then(data => {
+        if (data) setReadinessData(data)
+      })
+      .catch(() => {
+        // simulation fallback
+      })
+  }, [])
 
   const toggleAction = (id: number) => {
     setCheckedActions(prev =>
@@ -46,7 +58,9 @@ export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
               <p className="eyebrow" style={{ marginBottom: 4 }}>Placement Diagnostic Engine</p>
               <h3 style={{ margin: 0, fontSize: '19px' }}>Campus &amp; Off-Campus Placement Readiness</h3>
             </div>
-            <span className="kpi-value" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>92%</span>
+            <span className="kpi-value" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
+              {readinessData?.overall_score || 92}%
+            </span>
           </div>
 
           <p style={{ fontSize: '0.84rem', color: 'var(--text-2)', maxWidth: '600px', lineHeight: 1.6 }}>
@@ -54,7 +68,7 @@ export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
           </p>
 
           <div className="metric-list" style={{ marginTop: '16px' }}>
-            {pillars.map(({ label, value, status, good }) => (
+            {(readinessData?.pillars || pillars).map(({ label, value, status, good }) => (
               <div key={label} className="metric-row" style={{ padding: '10px 0' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-1)' }}>{label}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -91,13 +105,17 @@ export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
                       onChange={() => toggleAction(a.id)}
                       style={{ marginTop: '3px', cursor: 'pointer', accentColor: 'var(--accent)' }}
                     />
-                    <div style={{ flex: 1 }}>
+                    <div
+                      style={{ flex: 1, cursor: 'pointer' }}
+                      onClick={() => onNavigate?.(a.to)}
+                      title={`Open ${a.title}`}
+                    >
                       <strong style={{
                         fontSize: '0.82rem',
                         textDecoration: isChecked ? 'line-through' : 'none',
                         color: 'var(--text-1)',
                       }}>
-                        {a.title}
+                        {a.title} →
                       </strong>
                       <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', margin: '2px 0 0' }}>
                         {a.sub}
