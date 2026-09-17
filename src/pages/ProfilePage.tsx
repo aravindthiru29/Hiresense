@@ -1,0 +1,291 @@
+import { useState } from 'react'
+
+type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
+
+interface ProfilePageProps {
+  onNavigate?: (view: View) => void
+}
+
+export function ProfilePage({ onNavigate }: ProfilePageProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [fullName, setFullName] = useState('Aravind T')
+  const [targetRole, setTargetRole] = useState('Software Developer')
+  const [college, setCollege] = useState('VIT Vellore')
+  const [degree, setDegree] = useState('B.Tech')
+  const [branch, setBranch] = useState('Artificial Intelligence & Data Science')
+  const [gradYear, setGradYear] = useState('2026')
+  const [bio, setBio] = useState(
+    'Aspiring Software Developer & AI/ML Engineer with strong foundations in Python, Java, SQL, and Flask. Passionate about building high-performance backend systems and data-driven intelligent applications.',
+  )
+  const [githubHandle, setGithubHandle] = useState('github.com/aravind-t')
+  const [email, setEmail] = useState('aravind.t@vitstudent.ac.in')
+
+  const verifiedSkills = [
+    { name: 'Python', resumeClaim: 'Advanced', demonstrated: 'Intermediate', status: 'developing', score: 86 },
+    { name: 'SQL & Database Optimization', resumeClaim: 'Intermediate', demonstrated: 'Strong', status: 'verified', score: 94 },
+    { name: 'Java & OOP Principles', resumeClaim: 'Intermediate', demonstrated: 'Intermediate', status: 'verified', score: 88 },
+    { name: 'Flask / RESTful APIs', resumeClaim: 'Strong', demonstrated: 'Strong', status: 'verified', score: 92 },
+    { name: 'Machine Learning & OpenCV', resumeClaim: 'Intermediate', demonstrated: 'Assessment Pending', status: 'pending', score: 82 },
+    { name: 'Data Structures & Algorithms', resumeClaim: 'Proficient', demonstrated: 'Verified in Practice', status: 'verified', score: 85 },
+  ]
+
+  const projects = [
+    {
+      title: 'Smart Crop Monitoring System',
+      stack: 'Python · Flask · OpenCV · Scikit-Learn',
+      summary: 'Edge-AI agricultural diagnostic platform processing 1,200+ crop image samples with 92.4% disease detection accuracy.',
+      link: 'github.com/aravind-t/smart-crop-ai',
+      badge: 'Featured Project',
+    },
+    {
+      title: 'Personalized Recommendation Engine',
+      stack: 'Python · PyTorch · SQL · FastAPI',
+      summary: 'Collaborative-filtering recommendation service generating real-time suggestions across 10k+ simulated user sessions.',
+      link: 'github.com/aravind-t/recsys-engine',
+      badge: 'Production Ready',
+    },
+  ]
+
+  return (
+    <div className="page-stack">
+      {/* Profile Header Card */}
+      <section className="panel-grid">
+        <article className="card wide">
+          <div className="section-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div className="avatar" style={{ width: 52, height: 52, fontSize: '18px', fontWeight: 700 }}>
+                AT
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h2 style={{ fontSize: '22px', fontWeight: 700, margin: 0, letterSpacing: '-0.04em' }}>
+                    {fullName}
+                  </h2>
+                  <span className="pill green">Open for Placements</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', margin: '4px 0 0', color: 'var(--text-2)' }}>
+                  {targetRole} · {degree} in {branch} · Class of {gradYear}
+                </p>
+                <p style={{ fontSize: '0.74rem', margin: '2px 0 0', color: 'var(--accent)', fontWeight: 600 }}>
+                  {college}
+                </p>
+              </div>
+            </div>
+
+            <button
+              className={`btn ${isEditing ? '' : 'btn-secondary'} btn-sm`}
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? 'Save Changes ✓' : 'Edit Profile ✎'}
+            </button>
+          </div>
+
+          {isEditing ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Full Name
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Target Role
+                <input
+                  type="text"
+                  value={targetRole}
+                  onChange={e => setTargetRole(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                College / University
+                <input
+                  type="text"
+                  value={college}
+                  onChange={e => setCollege(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Degree
+                <input
+                  type="text"
+                  value={degree}
+                  onChange={e => setDegree(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Graduation Year
+                <input
+                  type="text"
+                  value={gradYear}
+                  onChange={e => setGradYear(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Specialization / Branch
+                <input
+                  type="text"
+                  value={branch}
+                  onChange={e => setBranch(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600, gridColumn: '1 / -1' }}>
+                Bio &amp; Summary
+                <textarea
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  rows={2}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)', fontFamily: 'inherit', fontSize: '13px' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                Email Address
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.74rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                GitHub Profile Handle
+                <input
+                  type="text"
+                  value={githubHandle}
+                  onChange={e => setGithubHandle(e.target.value)}
+                  style={{ padding: '8px 10px', border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+                />
+              </label>
+            </div>
+          ) : (
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-2)', lineHeight: 1.6, marginTop: 14, maxWidth: '640px' }}>
+              {bio}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-3)' }}>
+              📧 <strong style={{ color: 'var(--text-1)', fontWeight: 500 }}>{email}</strong>
+            </span>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-3)' }}>
+              🐙 <strong style={{ color: 'var(--text-1)', fontWeight: 500 }}>{githubHandle}</strong>
+            </span>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-3)' }}>
+              🎓 <strong style={{ color: 'var(--text-1)', fontWeight: 500 }}>GPA: 8.9 / 10.0</strong>
+            </span>
+          </div>
+        </article>
+
+        {/* Profile Completeness Card */}
+        <article className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div className="section-title">
+              <h3 style={{ margin: 0 }}>Profile Signal</h3>
+              <span className="badge badge-green">92% Complete</span>
+            </div>
+            <div className="meter" style={{ height: '7px', margin: '10px 0 8px' }}>
+              <i style={{ width: '92%' }} />
+            </div>
+            <p style={{ fontSize: '0.76rem', color: 'var(--text-2)', margin: 0 }}>
+              Only 1 step remaining to unlock 100% Verified Profile badge for recruiters.
+            </p>
+          </div>
+
+          <div className="mini-panel" style={{ marginTop: '14px' }}>
+            <p>Final Step to 100%</p>
+            <strong style={{ fontSize: '0.78rem', color: 'var(--text-1)' }}>
+              Complete ML Machine Learning Verification Assessment (15 mins)
+            </strong>
+            <div style={{ marginTop: '8px' }}>
+              <button className="btn btn-sm" onClick={() => onNavigate?.('interview')}>
+                Take Assessment →
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      {/* Verified Skills Matrix */}
+      <section className="card">
+        <div className="section-title">
+          <div>
+            <h3 style={{ margin: 0 }}>Verified Technical Skills Matrix</h3>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-3)', margin: '2px 0 0' }}>
+              Skills validated through automated resume parsing and assessment verification
+            </p>
+          </div>
+          <button className="btn-ghost btn-sm" onClick={() => onNavigate?.('readiness')}>
+            View Placement Readiness →
+          </button>
+        </div>
+
+        <div style={{ overflowX: 'auto', marginTop: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                <th style={{ padding: '10px 8px', color: 'var(--text-3)', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.06em' }}>Skill Domain</th>
+                <th style={{ padding: '10px 8px', color: 'var(--text-3)', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.06em' }}>Resume Claim</th>
+                <th style={{ padding: '10px 8px', color: 'var(--text-3)', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.06em' }}>Verified Level</th>
+                <th style={{ padding: '10px 8px', color: 'var(--text-3)', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.06em' }}>Proficiency</th>
+                <th style={{ padding: '10px 8px', color: 'var(--text-3)', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.06em' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {verifiedSkills.map(s => (
+                <tr key={s.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 8px', fontWeight: 600, color: 'var(--text-1)' }}>{s.name}</td>
+                  <td style={{ padding: '12px 8px', color: 'var(--text-2)' }}>{s.resumeClaim}</td>
+                  <td style={{ padding: '12px 8px', color: 'var(--text-1)' }}>{s.demonstrated}</td>
+                  <td style={{ padding: '12px 8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="meter" style={{ width: 60 }}><i style={{ width: `${s.score}%` }} /></div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontWeight: 600 }}>{s.score}%</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px 8px' }}>
+                    <span className={`status ${s.status}`}>
+                      {s.status === 'verified' ? '✓ Verified' : s.status === 'developing' ? 'Developing' : 'Pending'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Featured Projects Portfolio */}
+      <section className="panel-grid">
+        {projects.map(p => (
+          <article key={p.title} className="card">
+            <div className="section-title">
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--text-1)' }}>{p.title}</strong>
+                <p style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 600, margin: '2px 0 0' }}>
+                  {p.stack}
+                </p>
+              </div>
+              <span className="badge badge-accent">{p.badge}</span>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', lineHeight: 1.55, margin: '8px 0 14px' }}>
+              {p.summary}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-3)' }}>{p.link}</span>
+              <button className="btn-ghost btn-sm" onClick={() => onNavigate?.('github')}>
+                Audit Repo →
+              </button>
+            </div>
+          </article>
+        ))}
+      </section>
+    </div>
+  )
+}
