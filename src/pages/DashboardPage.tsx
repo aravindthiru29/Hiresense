@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { dashboardApi, type DashboardData } from '../lib'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,7 +9,8 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const [dashData, setDashData] = useState<DashboardData | null>(null)
+  const { state } = useResume()
+  const [_dashData, setDashData] = useState<DashboardData | null>(null)
 
   useEffect(() => {
     dashboardApi.getDashboardData()
@@ -26,10 +28,10 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     }
   }
 
-  const stats = dashData?.stats || [
-    { label: 'Placement readiness', value: '92%', delta: '+8% this month', good: true, to: 'readiness' as View },
-    { label: 'ATS resume score', value: '87/100', delta: 'Strong keyword fit', good: true, to: 'resume' as View },
-    { label: 'Mock interview score', value: '94%', delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
+  const stats = [
+    { label: 'Placement readiness', value: `${state.readinessScore}%`, delta: '+8% this month', good: true, to: 'readiness' as View },
+    { label: 'ATS resume score', value: `${state.atsScore}/100`, delta: state.atsScore >= 90 ? 'Exceptional keyword fit' : 'Strong keyword fit', good: true, to: 'resume' as View },
+    { label: 'Mock interview score', value: `${Math.min(98, state.readinessScore + 2)}%`, delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
   ]
 
   return (
@@ -66,10 +68,10 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           </div>
           <div className="chart-bars">
             {[
-              { w: 'Week 1', v: 72, label: '72%' },
-              { w: 'Week 2', v: 78, label: '78%' },
-              { w: 'Week 3', v: 84, label: '84%' },
-              { w: 'Week 4 (Current)', v: 92, label: '92%' },
+              { w: 'Week 1', v: Math.max(50, state.readinessScore - 20), label: `${Math.max(50, state.readinessScore - 20)}%` },
+              { w: 'Week 2', v: Math.max(60, state.readinessScore - 14), label: `${Math.max(60, state.readinessScore - 14)}%` },
+              { w: 'Week 3', v: Math.max(70, state.readinessScore - 8), label: `${Math.max(70, state.readinessScore - 8)}%` },
+              { w: 'Week 4 (Current)', v: state.readinessScore, label: `${state.readinessScore}%` },
             ].map(({ w, v, label }) => (
               <div key={w} className="bar-item">
                 <div className="bar-track">
@@ -90,11 +92,11 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           </div>
           <div className="meter-list" style={{ marginTop: '8px' }}>
             {[
-              ['Python, OOP & Flask', 92],
-              ['Data Structures & Algorithms', 84],
-              ['SQL Query Optimization', 86],
-              ['System Design & Caching', 68],
-              ['STAR Behavioral Storytelling', 94],
+              ['Python, OOP & Flask', state.subScores.skills],
+              ['Data Structures & Algorithms', state.subScores.brevity],
+              ['SQL Query Optimization', Math.min(98, state.subScores.brevity + 2)],
+              ['System Design & Caching', Math.max(60, state.subScores.impact - 11)],
+              ['STAR Behavioral Storytelling', state.subScores.style],
             ].map(([label, value]) => (
               <div key={String(label)} className="stack-row">
                 <div className="stack-label-row">
@@ -122,7 +124,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               <div>
                 <strong>Microsoft On-Campus Drive</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
-                  Software Development Engineer (SDE I)
+                  {state.targetRole} (Entry Level)
                 </p>
               </div>
               <button
@@ -135,7 +137,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             </li>
             <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
-                <strong>Amazon SDE Internship Round</strong>
+                <strong>Amazon Internship Round</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
                   DSA &amp; Leadership Principles
                 </p>
@@ -144,9 +146,9 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             </li>
             <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
-                <strong>Flipkart / Swiggy Backend Evaluation</strong>
+                <strong>Flipkart / Swiggy Evaluation</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
-                  Python, Flask &amp; Database Architecture
+                  {state.targetRole} &amp; Database Architecture
                 </p>
               </div>
               <span className="pill">In 4 days</span>
@@ -166,16 +168,18 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
               <div>
                 <strong>Resume ATS Metrics</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
-                  Quantify 2 project bullet points
+                  {state.atsScore >= 90 ? `Verified at ${state.atsScore}/100 ATS score` : 'Quantify project bullet points'}
                 </p>
               </div>
-              <span className="pill green">Ready to apply</span>
+              <span className={`pill ${state.atsScore >= 90 ? 'green' : 'amber'}`}>
+                {state.atsScore >= 90 ? 'Top tier fit' : 'Ready to polish'}
+              </span>
             </li>
             <li style={{ cursor: 'pointer' }} onClick={() => handleNav('interview')}>
               <div>
-                <strong>System Design Fundamentals</strong>
+                <strong>{state.gapSkills[0]?.name || 'System Design Fundamentals'}</strong>
                 <p style={{ fontSize: '0.72rem', margin: '2px 0 0', color: 'var(--text-3)' }}>
-                  Complete Redis caching scenario
+                  Complete practice scenario
                 </p>
               </div>
               <span className="pill amber">Needs polish</span>

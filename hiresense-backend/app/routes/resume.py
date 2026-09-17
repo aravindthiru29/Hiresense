@@ -16,10 +16,9 @@ resume_bp = Blueprint('resume', __name__, url_prefix='/api/resume')
 def upload_resume():
     user_id = int(get_jwt_identity())
 
-    if 'file' not in request.files:
+    file = request.files.get('file') or request.files.get('resume')
+    if not file:
         return error_response(code="NO_FILE", message="No file provided in request", status_code=400)
-
-    file = request.files['file']
     if file.filename == '':
         return error_response(code="EMPTY_FILENAME", message="No file selected", status_code=400)
 

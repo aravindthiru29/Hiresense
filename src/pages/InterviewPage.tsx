@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { interviewApi } from '../lib'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,6 +9,7 @@ interface InterviewPageProps {
 }
 
 export function InterviewPage({ onNavigate }: InterviewPageProps) {
+  const { state } = useResume()
   const [selectedRound, setSelectedRound] = useState<'behavioral' | 'dsa' | 'system' | 'project'>('behavioral')
   const [userAnswer, setUserAnswer] = useState('')
   const [isEvaluating, setIsEvaluating] = useState(false)
@@ -17,9 +19,16 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
     rubric: Array<[string, number]>
   } | null>(null)
 
+  const featuredProject = state.projects[0] || {
+    title: 'Smart Crop Monitoring System',
+    stack: 'Python · Flask · OpenCV · Machine Learning',
+    summary: 'Computer vision analytics for crop health diagnostics.',
+    improvedBullet: 'Engineered edge-AI diagnostic system in Python & OpenCV with 92.4% classification accuracy and sub-250ms API latency.',
+  }
+
   const questionsByRound = {
     behavioral: {
-      question: 'Tell me about a time you led a challenging technical project or resolved a critical team bottleneck.',
+      question: `Tell me about a time you led a challenging technical project like ${featuredProject.title} or resolved a critical team bottleneck.`,
       focus: 'Use the STAR format: Situation, Task, Action, Result. Highlight individual ownership and measurable business or technical outcomes.',
       rubricMetrics: [
         ['STAR Structure', 94],
@@ -46,8 +55,8 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
       ] as Array<[string, number]>,
     },
     project: {
-      question: 'Explain the architecture and OpenCV image-processing pipeline in your Smart Crop Monitoring project.',
-      focus: 'Articulate the data ingestion flow, edge model latency constraints, Flask REST endpoints, and how you achieved 92.4% classification accuracy.',
+      question: `Explain the architecture, technology stack, and engineering pipeline in your ${featuredProject.title} project.`,
+      focus: `Articulate the data ingestion flow, key technical decisions using ${featuredProject.stack}, and how you verified measurable performance outcomes.`,
       rubricMetrics: [
         ['Project Mastery', 96],
         ['Pipeline Explanation', 94],
@@ -58,13 +67,15 @@ export function InterviewPage({ onNavigate }: InterviewPageProps) {
 
   const sampleAnswers: Record<string, string> = {
     behavioral:
-      'In our Smart Crop Monitoring project, we encountered an inference latency bottleneck exceeding 900ms. Taking initiative as project lead, I profiled the OpenCV pipeline, refactored image operations to use vectorized NumPy matrices, and optimized image resizing. This reduced API latency to sub-250ms and maintained 92.4% disease classification accuracy across 1,200+ samples.',
+      `In our ${featuredProject.title} project, we encountered an inference latency bottleneck exceeding 900ms. Taking initiative as project lead, I profiled the ${featuredProject.stack} pipeline, refactored image operations to use vectorized NumPy matrices, and optimized processing. This reduced API latency to sub-250ms and maintained 92.4% classification accuracy across 1,200+ samples.`,
     dsa:
       'To optimize a database query joining two tables with 10M rows, I would first check the execution plan via EXPLAIN ANALYZE to identify sequential table scans. Next, I would create composite B-Tree indexes on the joining foreign keys, ensure data types strictly match to prevent implicit conversions, and apply range partitioning if the tables grow continuously.',
     system:
       'For a distributed rate limiter, I would utilize the Token Bucket or Sliding Window algorithm implemented in Redis. Redis Lua scripting guarantees atomic execution across distributed API gateways without costly distributed mutex locks, providing sub-5ms check times and fallback graceful degradation under spikes.',
     project:
-      'In the Smart Crop Monitoring System, leaf imagery captured by field cameras is sent via Flask REST endpoints. The backend uses OpenCV for Gaussian blurring and HSV color masking before feeding features into a machine learning classification model. The system achieved 92.4% diagnostic precision with lightweight edge deployment.',
+      featuredProject.improvedBullet
+        ? `In the ${featuredProject.title} project, ${featuredProject.improvedBullet} We implemented ${featuredProject.stack} to deliver high reliability, clean architectural boundaries, and low latency.`
+        : `In the ${featuredProject.title} project, ${featuredProject.summary} We implemented ${featuredProject.stack} to deliver high reliability, clean architectural boundaries, and low latency.`,
   }
 
   const currentRoundData = questionsByRound[selectedRound]

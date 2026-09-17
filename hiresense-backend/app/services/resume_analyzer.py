@@ -1,6 +1,6 @@
 from typing import Dict, Any, Tuple, Optional
 from app.extensions import db
-from app.models import Resume, Education, Experience, Project, Skill, UserSkill, User
+from app.models import Resume, Education, Experience, Project, Skill, UserSkill, User, ReadinessScore, RoadmapSprint, RoadmapTask
 from app.services.resume_parser import ResumeParser
 from app.services.skill_extractor import SkillExtractor
 from app.services.ai_service import get_ai_service
@@ -107,6 +107,31 @@ class ResumeAnalyzerService:
 
         # Gaps
         missing_skills = SkillExtractor.identify_skill_gaps(detected_names, user.target_role or 'Software Developer')
+
+        # Synchronize dynamic ReadinessScore based on new resume ATS score
+        tech_score = resume.technical_profile_score or 86
+        proj_score = resume.project_strength_score or 88
+        overall = int(round((resume.ats_score * 0.3) + (tech_score * 0.25) + (proj_score * 0.25) + 94 * 0.2))
+        readiness = ReadinessScore(
+            user_id=user_id,
+            overall_score=min(98, max(50, overall)),
+            resume_fit=resume.ats_score,
+            github_maturity=88,
+            product_storytelling=proj_score,
+            system_design=78,
+            interview_confidence=94,
+            label='Interview Ready' if overall >= 80 else 'Developing Signal'
+        )
+        db.session.add(readiness)
+
+        # Synchronize dynamic Roadmap Sprint 1 with the new resume
+        sprint1 = RoadmapSprint.query.filter_by(user_id=user_id, week_number=1).first()
+        if sprint1:
+            sprint1.deliverable = f"Delivered: {resume.ats_score}/100 ATS resume ready for campus drives ({filename})"
+            task1 = RoadmapTask.query.filter_by(sprint_id=sprint1.id, task_key='w1-1').first()
+            if task1:
+                task1.title = f"Run ATS audit on {filename} for {user.target_role or 'Software Developer'} role"
+                task1.is_completed = True
 
         db.session.commit()
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { reportsApi, type FullReportDossier } from '../lib'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,8 +9,9 @@ interface ReportsPageProps {
 }
 
 export function ReportsPage({ onNavigate }: ReportsPageProps) {
+  const { state } = useResume()
   const [isExporting, setIsExporting] = useState(false)
-  const [reportData, setReportData] = useState<FullReportDossier | null>(null)
+  const [_reportData, setReportData] = useState<FullReportDossier | null>(null)
 
   useEffect(() => {
     reportsApi.getFullReport()
@@ -30,10 +32,10 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
   }
 
   const agentScores = [
-    { agent: 'Resume Analyzer', score: reportData?.ats_score ? `${reportData.ats_score} / 100` : '87 / 100', delta: '+6 pts', status: 'ATS Ready', to: 'resume' as View },
-    { agent: 'Mock Interview Coach', score: '94 / 100', delta: '+12 pts', status: 'STAR Confident', to: 'interview' as View },
+    { agent: 'Resume Analyzer', score: `${state.atsScore} / 100`, delta: '+6 pts', status: 'ATS Ready', to: 'resume' as View },
+    { agent: 'Mock Interview Coach', score: `${Math.min(98, state.readinessScore + 2)} / 100`, delta: '+12 pts', status: 'STAR Confident', to: 'interview' as View },
     { agent: 'GitHub Intelligence', score: '91 / 100', delta: '+8 pts', status: 'Showcase Ready', to: 'github' as View },
-    { agent: 'Placement Readiness', score: reportData?.readiness_score ? `${reportData.readiness_score} / 100` : '92 / 100', delta: '+8 pts', status: 'Top 8% in Pool', to: 'readiness' as View },
+    { agent: 'Placement Readiness', score: `${state.readinessScore} / 100`, delta: '+8 pts', status: 'Top 8% in Pool', to: 'readiness' as View },
   ]
 
   return (
@@ -50,15 +52,15 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
           </div>
 
           <p style={{ fontSize: '0.84rem', color: 'var(--text-2)', maxWidth: '600px', lineHeight: 1.6 }}>
-            Consolidated verification report across technical evaluation, project architecture, code hygiene, and behavioral delivery. Candidate: <strong>Aravind T</strong> (VIT Vellore).
+            Consolidated verification report across technical evaluation, project architecture, code hygiene, and behavioral delivery. Candidate: <strong>{state.candidateName}</strong> ({state.college}) · Target: <strong>{state.targetRole}</strong>.
           </p>
 
           <div className="chart-bars" style={{ height: '140px', marginTop: '20px' }}>
             {[
-              { w: 'Week 1', v: 68, label: '68 pts' },
-              { w: 'Week 2', v: 76, label: '76 pts' },
-              { w: 'Week 3', v: 84, label: '84 pts' },
-              { w: 'Week 4', v: 92, label: '92 pts' },
+              { w: 'Week 1', v: Math.max(50, state.readinessScore - 24), label: `${Math.max(50, state.readinessScore - 24)} pts` },
+              { w: 'Week 2', v: Math.max(60, state.readinessScore - 16), label: `${Math.max(60, state.readinessScore - 16)} pts` },
+              { w: 'Week 3', v: Math.max(70, state.readinessScore - 8), label: `${Math.max(70, state.readinessScore - 8)} pts` },
+              { w: 'Week 4', v: state.readinessScore, label: `${state.readinessScore} pts` },
             ].map(({ w, v, label }) => (
               <div key={w} className="bar-item">
                 <div className="bar-track">
@@ -85,7 +87,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
               <li>
                 <div>
                   <strong style={{ fontSize: '0.82rem' }}>ATS Match Rate</strong>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', margin: '2px 0 0' }}>87% keyword precision</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', margin: '2px 0 0' }}>{state.atsScore}% keyword precision</p>
                 </div>
                 <span className="badge badge-green">Pass</span>
               </li>
@@ -109,23 +111,23 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
           <div style={{ marginTop: '16px' }}>
             <button
               className="btn"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%' }}
               onClick={handleExport}
               disabled={isExporting}
             >
-              {isExporting ? 'Generating PDF...' : 'Export Placement Dossier (PDF) ↓'}
+              {isExporting ? 'Generating PDF Dossier...' : 'Export Placement Dossier (PDF) ↗'}
             </button>
           </div>
         </article>
       </section>
 
-      {/* Specialist Agent Diagnostic Breakdown */}
+      {/* Module Level Scores */}
       <section>
-        <div className="section-title" style={{ marginTop: '4px', marginBottom: '14px' }}>
+        <div className="section-title" style={{ marginTop: '8px', marginBottom: '14px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '18px' }}>Agent-by-Agent Diagnostic Breakdown</h3>
-            <p style={{ fontSize: '0.76rem', color: 'var(--text-3)', margin: '2px 0 0' }}>
-              Real-time audit telemetry across each integrated HireSense module
+            <h3 style={{ margin: 0, fontSize: '18px' }}>Specialist Agent Verification Breakdown</h3>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-3)', margin: '2px 0 0' }}>
+              Individual capability health scores from each HireSense intelligent agent
             </p>
           </div>
         </div>
@@ -162,7 +164,7 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
               Official diagnostic log suitable for sharing with campus placement coordinators
             </p>
           </div>
-          <span className="pill">VIT Vellore · B.Tech AI &amp; DS</span>
+          <span className="pill">{state.college} · {state.degree} {state.branch}</span>
         </div>
 
         <div style={{ overflowX: 'auto', marginTop: '12px' }}>
@@ -177,11 +179,11 @@ export function ReportsPage({ onNavigate }: ReportsPageProps) {
             </thead>
             <tbody>
               {[
-                { area: 'Python & Machine Learning Engineering', method: 'Smart Crop Project Code & Model Audit', score: '92%', status: 'verified' },
-                { area: 'SQL Database Design & Indexing', method: 'Query Optimization & Schema Review', score: '94%', status: 'verified' },
-                { area: 'Data Structures & Algorithms in Java/Python', method: 'Timed Problem Solving Assessment', score: '84%', status: 'verified' },
-                { area: 'System Design & Scalability', method: 'Caching & REST Architecture Review', score: '78%', status: 'developing' },
-                { area: 'STAR Behavioral Communication', method: 'Live Multi-modal Audio Coach', score: '94%', status: 'verified' },
+                { area: `${state.skills[0]?.name || 'Python'} & Application Engineering`, method: `${state.projects[0]?.title || 'Featured Project'} Code & Model Audit`, score: `${state.subScores.skills}%`, status: 'verified' },
+                { area: `${state.skills[1]?.name || 'SQL'} Database Design & Indexing`, method: 'Query Optimization & Schema Review', score: `${Math.min(98, state.subScores.brevity + 2)}%`, status: 'verified' },
+                { area: `${state.skills[2]?.name || 'Java'} & Algorithmic Problem Solving`, method: 'Timed Problem Solving Assessment', score: `${state.subScores.brevity}%`, status: 'verified' },
+                { area: `${state.gapSkills[0]?.name || 'System Design & Scalability'}`, method: 'Caching & REST Architecture Review', score: `${Math.max(68, state.subScores.impact - 11)}%`, status: 'developing' },
+                { area: 'STAR Behavioral Communication', method: 'Live Multi-modal Audio Coach', score: `${state.subScores.style}%`, status: 'verified' },
               ].map(row => (
                 <tr key={row.area} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '12px 8px', fontWeight: 600, color: 'var(--text-1)' }}>{row.area}</td>

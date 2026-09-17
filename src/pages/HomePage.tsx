@@ -1,3 +1,5 @@
+import { useResume } from '../context'
+
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
 interface HomePageProps {
@@ -5,17 +7,24 @@ interface HomePageProps {
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
+  const { state } = useResume()
+
   const handleNav = (view: View) => {
     if (onNavigate) {
       onNavigate(view)
     }
   }
 
+  const firstName = state.candidateName.split(' ')[0] || 'Candidate'
+  const gradShort = state.graduationYear ? state.graduationYear.slice(-2) : '26'
+  const verifiedCount = state.skills.filter(s => s.status === 'verified').length
+  const featuredProject = state.projects[0]?.title || 'Featured Project'
+
   const agentLaunchers = [
     {
       key: 'resume' as View,
       label: 'Resume Analyzer',
-      tag: '87 ATS Score',
+      tag: `${state.atsScore} ATS Score`,
       tagColor: 'green',
       desc: 'AI keyword matching, bullet point impact quantification, and formatting audit.',
       action: 'Open Analyzer →',
@@ -24,7 +33,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
     {
       key: 'interview' as View,
       label: 'Mock Interview Coach',
-      tag: '94% Ready',
+      tag: `${Math.min(98, state.readinessScore + 2)}% Ready`,
       tagColor: 'green',
       desc: 'Practice Behavioral STAR, Technical DSA, and Project Defense with real-time feedback.',
       action: 'Start Session →',
@@ -42,7 +51,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
     {
       key: 'readiness' as View,
       label: 'Placement Readiness',
-      tag: '92% Signal',
+      tag: `${state.readinessScore}% Signal`,
       tagColor: 'accent',
       desc: 'Benchmark profile against Google, Microsoft, Amazon, and top AI tech startups.',
       action: 'Check Benchmark →',
@@ -77,22 +86,22 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <div>
               <p className="eyebrow" style={{ marginBottom: 4 }}>Career Command Center</p>
               <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0, letterSpacing: '-0.04em' }}>
-                Good morning, Aravind.
+                Good morning, {firstName}.
               </h2>
             </div>
             <div className="pill-row" style={{ margin: 0 }}>
               <span className="pill green">● Active Placement Sprint</span>
-              <span className="pill">VIT Vellore · B.Tech AI &amp; DS &apos;26</span>
+              <span className="pill">{state.college} · {state.degree} {state.branch} &apos;{gradShort}</span>
             </div>
           </div>
 
           <p style={{ fontSize: '0.86rem', color: 'var(--text-2)', maxWidth: '580px', lineHeight: 1.6 }}>
-            Your career signal is currently in the <strong>top 8%</strong> of applicants targeting Software Developer and AI Engineering roles. 3 priority actions are recommended before campus drive rounds begin.
+            Your career signal is currently in the <strong>top 8%</strong> of applicants targeting {state.targetRole} and AI Engineering roles. 3 priority actions are recommended before campus drive rounds begin.
           </p>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
             <button className="btn" onClick={() => handleNav('resume')}>
-              Optimize Resume (87 ATS) →
+              Optimize Resume ({state.atsScore} ATS) →
             </button>
             <button className="btn btn-secondary" onClick={() => handleNav('interview')}>
               Practice Live Interview
@@ -112,15 +121,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
           }}>
             <div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Target Role</span>
-              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--text-1)', marginTop: '2px' }}>Software Developer</strong>
+              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--text-1)', marginTop: '2px' }}>{state.targetRole}</strong>
             </div>
             <div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Active Resume</span>
-              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--text-1)', marginTop: '2px' }}>Aravind_T_Resume.pdf</strong>
+              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--text-1)', marginTop: '2px' }}>{state.resumeFileName}</strong>
             </div>
             <div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Verified Skills</span>
-              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--green)', marginTop: '2px' }}>7 of 9 Verified</strong>
+              <strong style={{ display: 'block', fontSize: '0.88rem', color: 'var(--green)', marginTop: '2px' }}>{verifiedCount} of {state.skills.length} Verified</strong>
             </div>
             <div>
               <span style={{ fontSize: '0.68rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Drive Countdown</span>
@@ -137,18 +146,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <span className="pill green">+8% this month</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '10px 0 6px' }}>
-              <span className="score-large" style={{ margin: 0 }}>92</span>
+              <span className="score-large" style={{ margin: 0 }}>{state.readinessScore}</span>
               <span style={{ fontSize: '1rem', color: 'var(--text-3)' }}>/ 100</span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', margin: 0 }}>
-              Strong alignment with Tier-1 engineering criteria. Core strength in project architecture and Python/ML engineering.
+              Strong alignment with Tier-1 engineering criteria. Core strength in project architecture and {state.targetRole} engineering.
             </p>
           </div>
 
           <div className="mini-panel" style={{ marginTop: '16px' }}>
             <p>Next Best Action</p>
             <strong style={{ display: 'block', color: 'var(--text-1)', marginBottom: '4px' }}>
-              Sharpen Smart Crop Monitoring project metrics
+              Sharpen {featuredProject} project metrics
             </strong>
             <span style={{ fontSize: '0.76rem', color: 'var(--text-2)' }}>
               Resume Analyzer identified 2 bullet points ready for quantified impact stats (+4 ATS pts).
@@ -169,9 +178,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
       {/* KPI Stats Grid */}
       <section className="stats-grid" style={{ marginTop: 0 }}>
         {[
-          { label: 'ATS Resume Score', value: '87/100', delta: 'Top 10% in pool', good: true, to: 'resume' as View },
-          { label: 'Mock Interview Confidence', value: '94%', delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
-          { label: 'System Design & DSA', value: '78%', delta: '2 practice cases left', good: false, to: 'roadmap' as View },
+          { label: 'ATS Resume Score', value: `${state.atsScore}/100`, delta: 'Top 10% in pool', good: true, to: 'resume' as View },
+          { label: 'Mock Interview Confidence', value: `${Math.min(98, state.readinessScore + 2)}%`, delta: 'Behavioral & STAR ready', good: true, to: 'interview' as View },
+          { label: 'System Design & DSA', value: `${state.subScores.brevity}%`, delta: '2 practice cases left', good: false, to: 'roadmap' as View },
         ].map(({ label, value, delta, good, to }) => (
           <article
             key={label}

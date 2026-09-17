@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { roadmapApi } from '../lib'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,6 +9,7 @@ interface RoadmapPageProps {
 }
 
 export function RoadmapPage({ onNavigate }: RoadmapPageProps) {
+  const { state } = useResume()
   const [completedTasks, setCompletedTasks] = useState<string[]>([
     'w1-1',
     'w1-2',
@@ -54,11 +56,11 @@ export function RoadmapPage({ onNavigate }: RoadmapPageProps) {
       status: 'Completed',
       statusClass: 'green',
       tasks: [
-        { id: 'w1-1', text: 'Run ATS audit on Aravind_T_Resume.pdf for Software Developer role' },
-        { id: 'w1-2', text: 'Quantify Smart Crop Monitoring metrics (92.4% accuracy, sub-250ms latency)' },
-        { id: 'w1-3', text: 'Add collaborative-filtering and indexing bullets to recommendation project' },
+        { id: 'w1-1', text: `Run ATS audit on ${state.resumeFileName} for ${state.targetRole} role` },
+        { id: 'w1-2', text: `Quantify ${state.projects[0]?.title || 'Featured Project'} metrics (${state.atsScore >= 90 ? '94%+ verified' : 'metrics & latency'})` },
+        { id: 'w1-3', text: `Add structured performance and indexing bullets to ${state.projects[1]?.title || 'secondary project'}` },
       ],
-      deliverable: 'Delivered: 87/100 ATS resume ready for campus drives',
+      deliverable: `Delivered: ${state.atsScore}/100 ATS resume ready for campus drives (${state.resumeFileName})`,
     },
     {
       week: 'Week 2 (Active)',
@@ -91,7 +93,7 @@ export function RoadmapPage({ onNavigate }: RoadmapPageProps) {
       statusClass: '',
       tasks: [
         { id: 'w4-1', text: 'Conduct 3 full-length FAANG/Tier-1 behavioral STAR mock interviews' },
-        { id: 'w4-2', text: 'Submit 10 tailored applications to Microsoft, Amazon, and top AI unicorns' },
+        { id: 'w4-2', text: `Submit 10 tailored applications to Microsoft, Amazon, and top ${state.targetRole} tech teams` },
         { id: 'w4-3', text: 'Export finalized Placement Readiness Dossier & verified skills sheet' },
       ],
       deliverable: 'Target: Secure initial technical screen invitations',

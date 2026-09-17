@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react'
 import { profileApi } from '../lib'
+import { useResume } from '../context'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase() || 'AT'
+}
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,15 +17,16 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ onNavigate }: ProfilePageProps) {
+  const { state, updateProfile } = useResume()
   const [isEditing, setIsEditing] = useState(false)
-  const [fullName, setFullName] = useState('Aravind T')
-  const [targetRole, setTargetRole] = useState('Software Developer')
-  const [college, setCollege] = useState('VIT Vellore')
-  const [degree, setDegree] = useState('B.Tech')
-  const [branch, setBranch] = useState('Artificial Intelligence & Data Science')
-  const [gradYear, setGradYear] = useState('2026')
+  const [fullName, setFullName] = useState(state.candidateName)
+  const [targetRole, setTargetRole] = useState(state.targetRole)
+  const [college, setCollege] = useState(state.college)
+  const [degree, setDegree] = useState(state.degree)
+  const [branch, setBranch] = useState(state.branch)
+  const [gradYear, setGradYear] = useState(state.graduationYear)
   const [bio, setBio] = useState(
-    'Aspiring Software Developer & AI/ML Engineer with strong foundations in Python, Java, SQL, and Flask. Passionate about building high-performance backend systems and data-driven intelligent applications.',
+    `Aspiring ${state.targetRole} with strong foundations in Python, Java, SQL, and Flask. Passionate about building high-performance backend systems and data-driven intelligent applications.`,
   )
   const [githubHandle, setGithubHandle] = useState('github.com/aravind-t')
   const [email, setEmail] = useState('aravind.t@vitstudent.ac.in')
@@ -43,6 +53,15 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
   const handleToggleEdit = async () => {
     if (isEditing) {
+      updateProfile({
+        candidateName: fullName,
+        college,
+        degree,
+        branch,
+        graduationYear: gradYear,
+        targetRole,
+      })
+
       try {
         await profileApi.updateProfile({
           full_name: fullName,
@@ -61,31 +80,21 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
     setIsEditing(!isEditing)
   }
 
-  const verifiedSkills = [
-    { name: 'Python', resumeClaim: 'Advanced', demonstrated: 'Intermediate', status: 'developing', score: 86 },
-    { name: 'SQL & Database Optimization', resumeClaim: 'Intermediate', demonstrated: 'Strong', status: 'verified', score: 94 },
-    { name: 'Java & OOP Principles', resumeClaim: 'Intermediate', demonstrated: 'Intermediate', status: 'verified', score: 88 },
-    { name: 'Flask / RESTful APIs', resumeClaim: 'Strong', demonstrated: 'Strong', status: 'verified', score: 92 },
-    { name: 'Machine Learning & OpenCV', resumeClaim: 'Intermediate', demonstrated: 'Assessment Pending', status: 'pending', score: 82 },
-    { name: 'Data Structures & Algorithms', resumeClaim: 'Proficient', demonstrated: 'Verified in Practice', status: 'verified', score: 85 },
-  ]
+  const verifiedSkills = state.skills.map(s => ({
+    name: s.name,
+    resumeClaim: s.resumeClaim || 'Intermediate',
+    demonstrated: s.demonstrated || (s.status === 'verified' ? 'Strong' : 'Intermediate'),
+    status: s.status || 'verified',
+    score: s.score || 88,
+  }))
 
-  const projects = [
-    {
-      title: 'Smart Crop Monitoring System',
-      stack: 'Python · Flask · OpenCV · Scikit-Learn',
-      summary: 'Edge-AI agricultural diagnostic platform processing 1,200+ crop image samples with 92.4% disease detection accuracy.',
-      link: 'github.com/aravind-t/smart-crop-ai',
-      badge: 'Featured Project',
-    },
-    {
-      title: 'Personalized Recommendation Engine',
-      stack: 'Python · PyTorch · SQL · FastAPI',
-      summary: 'Collaborative-filtering recommendation service generating real-time suggestions across 10k+ simulated user sessions.',
-      link: 'github.com/aravind-t/recsys-engine',
-      badge: 'Production Ready',
-    },
-  ]
+  const projects = state.projects.map(p => ({
+    title: p.title,
+    stack: p.stack,
+    summary: p.summary,
+    link: p.link || `github.com/aravind-t/${p.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+    badge: p.badge || 'Featured Project',
+  }))
 
   return (
     <div className="page-stack">
@@ -95,7 +104,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
           <div className="section-title">
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div className="avatar" style={{ width: 52, height: 52, fontSize: '18px', fontWeight: 700 }}>
-                AT
+                {getInitials(fullName)}
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -229,13 +238,13 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
           <div>
             <div className="section-title">
               <h3 style={{ margin: 0 }}>Profile Signal</h3>
-              <span className="badge badge-green">92% Complete</span>
+              <span className="badge badge-green">{state.readinessScore}% Complete</span>
             </div>
             <div className="meter" style={{ height: '7px', margin: '10px 0 8px' }}>
-              <i style={{ width: '92%' }} />
+              <i style={{ width: `${state.readinessScore}%` }} />
             </div>
             <p style={{ fontSize: '0.76rem', color: 'var(--text-2)', margin: 0 }}>
-              Only 1 step remaining to unlock 100% Verified Profile badge for recruiters.
+              Profile health synced with active ATS score ({state.atsScore}/100).
             </p>
           </div>
 

@@ -1,5 +1,5 @@
-import { useState, useEffect, type ChangeEvent } from 'react'
-import { resumeApi } from '../lib'
+import { useState, type ChangeEvent } from 'react'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,85 +8,26 @@ interface AnalyzerPageProps {
 }
 
 export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'bullets' | 'skills' | 'checklist'>('overview')
-  const [targetRole, setTargetRole] = useState('Software Developer')
-  const [resumeFileName, setResumeFileName] = useState('Aravind_T_Resume.pdf')
-  const [resumeFileSize, setResumeFileSize] = useState('2.4 MB')
-  const [atsScore, setAtsScore] = useState(87)
-  const [subScores, setSubScores] = useState({
-    impact: 79,
-    skills: 88,
-    brevity: 86,
-    style: 96,
-  })
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [completedFixes, setCompletedFixes] = useState<number[]>([])
-  const [copiedId, setCopiedId] = useState<number | null>(null)
+  const {
+    state,
+    uploadResume,
+    rescanResume,
+    toggleFix,
+    updateTargetRole,
+  } = useResume()
 
-  useEffect(() => {
-    resumeApi.getAnalysis()
-      .then(analysis => {
-        if (analysis) {
-          if (analysis.ats_score) setAtsScore(analysis.ats_score)
-          if (analysis.filename) setResumeFileName(analysis.filename)
-          if (analysis.file_size_formatted) setResumeFileSize(analysis.file_size_formatted)
-          if (analysis.role) setTargetRole(analysis.role)
-          if (analysis.sub_scores) {
-            setSubScores({
-              impact: analysis.sub_scores.impact || 79,
-              skills: analysis.sub_scores.skills || 88,
-              brevity: analysis.sub_scores.brevity || 86,
-              style: analysis.sub_scores.style || 96,
-            })
-          }
-        }
-      })
-      .catch(() => {
-        // Backend offline or local simulation fallback
-      })
-  }, [])
+  const [activeTab, setActiveTab] = useState<'overview' | 'bullets' | 'skills' | 'checklist'>('overview')
+  const [copiedId, setCopiedId] = useState<number | null>(null)
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setResumeFileName(file.name)
-      setResumeFileSize(`${(file.size / 1024 / 1024).toFixed(1)} MB`)
-      setIsAnalyzing(true)
-      try {
-        const result = await resumeApi.uploadResume(file)
-        if (result) {
-          if (result.ats_score) setAtsScore(result.ats_score)
-          if (result.filename) setResumeFileName(result.filename)
-          if (result.file_size_formatted) setResumeFileSize(result.file_size_formatted)
-          if (result.sub_scores) {
-            setSubScores({
-              impact: result.sub_scores.impact || 79,
-              skills: result.sub_scores.skills || 88,
-              brevity: result.sub_scores.brevity || 86,
-              style: result.sub_scores.style || 96,
-            })
-          }
-        }
-      } catch (err) {
-        console.warn('Backend upload offline, using local simulation:', err)
-      } finally {
-        setIsAnalyzing(false)
-      }
+      await uploadResume(file)
     }
   }
 
   const handleRescan = async () => {
-    setIsAnalyzing(true)
-    try {
-      const analysis = await resumeApi.getAnalysis()
-      if (analysis && analysis.ats_score) {
-        setAtsScore(analysis.ats_score)
-      }
-    } catch {
-      // simulation
-    } finally {
-      setTimeout(() => setIsAnalyzing(false), 750)
-    }
+    await rescanResume()
   }
 
   const handleCopyBullet = (id: number, text: string) => {
@@ -97,70 +38,21 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const toggleFix = (id: number) => {
-    setCompletedFixes(prev => {
-      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-      setAtsScore(Math.min(96, 87 + next.length * 2))
-      return next
-    })
-  }
+  const bulletOptimizations = state.bulletOptimizations
+  const matchedSkills = state.skills.map((s, idx) => ({
+    name: s.name,
+    strength: s.status === 'verified' ? 'Strong' : 'Good',
+    match: 86 + (idx % 12),
+  }))
+  const gapSkills = state.gapSkills
 
-  const bulletOptimizations = [
-    {
-      id: 1,
-      project: 'Smart Crop Monitoring System',
-      stack: 'Python · Flask · OpenCV · Machine Learning',
-      original: 'Built a crop monitoring dashboard using Python and OpenCV for agricultural diagnostics.',
-      improved:
-        'Engineered an edge-AI crop health diagnostic system in Python & OpenCV, processing 1,200+ leaf imagery samples with 92.4% disease classification accuracy; deployed via Flask backend with sub-250ms API latency.',
-      impact: '+6 ATS points · Quantified metrics & latency added',
-      category: 'Impact & Quantification',
-    },
-    {
-      id: 2,
-      project: 'Personalized Recommendation Engine',
-      stack: 'Python · SQL · PyTorch · Scikit-Learn',
-      original: 'Developed a machine learning recommendation algorithm with SQL database backend.',
-      improved:
-        'Architected a hybrid collaborative-filtering recommendation engine in Python & SQL, elevating relevance CTR by 24.6% across 10,000+ simulated user sessions with optimized indexed queries.',
-      impact: '+5 ATS points · Measurable engagement delta & indexing mentioned',
-      category: 'Technical Depth',
-    },
-    {
-      id: 3,
-      project: 'Campus Placement & Student Performance Portal',
-      stack: 'Java · Spring Boot · MySQL · REST APIs',
-      original: 'Created student portal for placement preparation and mock exam submissions.',
-      improved:
-        'Built secure RESTful microservices using Java & Spring Boot to handle concurrent mock assessments for 800+ candidate profiles, enforcing strict role-based access control and ACID transaction integrity.',
-      impact: '+4 ATS points · Concurrency, architecture & security keywords',
-      category: 'Architecture Keywords',
-    },
-  ]
-
-  const matchedSkills = [
-    { name: 'Python', strength: 'Strong', match: 98 },
-    { name: 'SQL & Query Design', strength: 'Strong', match: 94 },
-    { name: 'Machine Learning', strength: 'Strong', match: 91 },
-    { name: 'Flask / REST APIs', strength: 'Strong', match: 90 },
-    { name: 'Java & OOP', strength: 'Good', match: 86 },
-    { name: 'Git & Version Control', strength: 'Strong', match: 95 },
-    { name: 'Data Structures & Algorithms', strength: 'Good', match: 84 },
-    { name: 'OpenCV / Computer Vision', strength: 'Specialized', match: 89 },
-  ]
-
-  const gapSkills = [
-    { name: 'System Design / Caching (Redis)', impact: 'High', reason: 'Commonly evaluated in Tier-1 SDE rounds' },
-    { name: 'Docker / Containerization', impact: 'Medium', reason: 'Shows cloud readiness in modern development' },
-    { name: 'CI/CD Pipeline Workflow', impact: 'Medium', reason: 'Strengthens production-grade engineering profile' },
-  ]
-
+  const firstProjectName = state.projects[0]?.title || 'Featured Project'
   const suggestions = [
     {
       id: 1,
       priority: 'High Priority',
       color: 'red',
-      title: 'Quantify impact in Project #1 (Smart Crop Monitoring)',
+      title: `Quantify impact in Project #1 (${firstProjectName})`,
       detail: 'Add precision numbers (e.g. 92% classification accuracy, 1,200+ samples) to stand out to automated parsers.',
     },
     {
@@ -168,14 +60,14 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
       priority: 'High Priority',
       color: 'red',
       title: 'Explicitly specify System Design & Caching competencies',
-      detail: 'Adding Redis or distributed caching mention will raise SDE role compatibility past 90.',
+      detail: `Adding Redis or distributed caching mention will raise ${state.targetRole} role compatibility past 90.`,
     },
     {
       id: 3,
       priority: 'Medium Priority',
       color: 'amber',
       title: 'Refine professional summary statement',
-      detail: 'Align summary directly with "Software Developer with hands-on AI/ML & scalable backend engineering".',
+      detail: `Align summary directly with "${state.targetRole} with hands-on AI/ML & scalable backend engineering".`,
     },
     {
       id: 4,
@@ -197,13 +89,13 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               <h3 style={{ fontSize: '20px', margin: 0 }}>Resume Signal &amp; ATS Audit</h3>
             </div>
             <div className="pill-row" style={{ margin: 0 }}>
-              <span className="pill green">✓ ATS Ready ({atsScore}/100)</span>
+              <span className="pill green">✓ ATS Ready ({state.atsScore}/100)</span>
               <span className="pill">PDF · 1-Column Format</span>
             </div>
           </div>
 
           <p style={{ fontSize: '0.84rem', color: 'var(--text-2)', maxWidth: '620px', lineHeight: 1.6 }}>
-            Scanned against 450+ campus recruitment rubrics for <strong>{targetRole}</strong>. Your profile demonstrates exceptional project execution and backend fundamentals.
+            Scanned against 450+ campus recruitment rubrics for <strong>{state.targetRole}</strong>. Your profile demonstrates exceptional project execution and backend fundamentals.
           </p>
 
           <div style={{
@@ -221,9 +113,9 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '22px' }}>📄</span>
               <div>
-                <strong style={{ fontSize: '0.88rem', color: 'var(--text-1)' }}>{resumeFileName}</strong>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--text-1)' }}>{state.resumeFileName}</strong>
                 <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', margin: 0 }}>
-                  {resumeFileSize} · Candidate: Aravind T (VIT Vellore)
+                  {state.resumeFileSize} · Candidate: {state.candidateName} ({state.college})
                 </p>
               </div>
             </div>
@@ -236,9 +128,9 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               <button
                 className="btn btn-sm"
                 onClick={handleRescan}
-                disabled={isAnalyzing}
+                disabled={state.isAnalyzing}
               >
-                {isAnalyzing ? 'Scanning Resume...' : 'Re-scan ↺'}
+                {state.isAnalyzing ? 'Scanning Resume...' : 'Re-scan ↺'}
               </button>
             </div>
           </div>
@@ -251,9 +143,9 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
             {['Software Developer', 'AI / ML Engineer', 'Backend Developer', 'Data Scientist'].map(role => (
               <button
                 key={role}
-                className={`pill${targetRole === role ? ' accent' : ''}`}
+                className={`pill${state.targetRole === role ? ' accent' : ''}`}
                 style={{ cursor: 'pointer', border: '1px solid var(--border)' }}
-                onClick={() => setTargetRole(role)}
+                onClick={() => updateTargetRole(role)}
               >
                 {role}
               </button>
@@ -269,7 +161,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
               <span className="badge badge-green">Top 10%</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '8px 0 4px' }}>
-              <span className="score-large" style={{ margin: 0 }}>{atsScore}</span>
+              <span className="score-large" style={{ margin: 0 }}>{state.atsScore}</span>
               <span style={{ fontSize: '1rem', color: 'var(--text-3)' }}>/ 100</span>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: 0 }}>
@@ -279,10 +171,10 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
 
           <div className="meter-list" style={{ marginTop: '14px' }}>
             {[
-              { label: 'Keyword Alignment', value: subScores.skills },
-              { label: 'Impact & Quantification', value: subScores.impact },
-              { label: 'Technical Depth', value: subScores.brevity },
-              { label: 'ATS Format Compliance', value: subScores.style },
+              { label: 'Keyword Alignment', value: state.subScores.skills },
+              { label: 'Impact & Quantification', value: state.subScores.impact },
+              { label: 'Technical Depth', value: state.subScores.brevity },
+              { label: 'ATS Format Compliance', value: state.subScores.style },
             ].map(({ label, value }) => (
               <div key={label} className="stack-row">
                 <div className="stack-label-row">
@@ -317,7 +209,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
           { key: 'overview', label: 'Overview & Highlights' },
           { key: 'bullets', label: 'Project Bullet Optimizer (AI Rewrite)' },
           { key: 'skills', label: 'Skills & Keyword Match' },
-          { key: 'checklist', label: `Actionable Checklist (${completedFixes.length}/${suggestions.length})` },
+          { key: 'checklist', label: `Actionable Checklist (${state.completedFixes.length}/${suggestions.length})` },
         ].map(tab => (
           <button
             key={tab.key}
@@ -340,44 +232,28 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
           <article className="card">
             <div className="section-title">
               <h3 style={{ margin: 0 }}>Detected Resume Projects</h3>
-              <span className="pill">2 Found</span>
+              <span className="pill">{state.projects.length} Found</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
-              <div style={{
-                background: 'var(--bg-inset)',
-                padding: '14px',
-                borderRadius: 'var(--r-lg)',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <strong style={{ fontSize: '0.88rem', color: 'var(--text-1)' }}>Smart Crop Monitoring System</strong>
-                  <span className="pill green" style={{ fontSize: '0.68rem' }}>92% Strength</span>
+              {state.projects.map(proj => (
+                <div key={proj.title} style={{
+                  background: 'var(--bg-inset)',
+                  padding: '14px',
+                  borderRadius: 'var(--r-lg)',
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-1)' }}>{proj.title}</strong>
+                    <span className="pill green" style={{ fontSize: '0.68rem' }}>{proj.impactRating || 90}% Strength</span>
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 600, margin: '2px 0 6px' }}>
+                    {proj.stack}
+                  </p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: 0 }}>
+                    {proj.summary}
+                  </p>
                 </div>
-                <p style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 600, margin: '2px 0 6px' }}>
-                  Python · Flask · OpenCV · Machine Learning
-                </p>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: 0 }}>
-                  Computer vision analytics for crop health. Great technical depth, recommended to add clear scale numbers.
-                </p>
-              </div>
-
-              <div style={{
-                background: 'var(--bg-inset)',
-                padding: '14px',
-                borderRadius: 'var(--r-lg)',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <strong style={{ fontSize: '0.88rem', color: 'var(--text-1)' }}>Recommendation Engine</strong>
-                  <span className="pill green" style={{ fontSize: '0.68rem' }}>88% Strength</span>
-                </div>
-                <p style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 600, margin: '2px 0 6px' }}>
-                  Python · SQL · PyTorch · Scikit-Learn
-                </p>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: 0 }}>
-                  Collaborative-filtering recommendation engine. Query performance and relevance metrics stand out positively.
-                </p>
-              </div>
+              ))}
             </div>
 
             <div style={{ marginTop: '16px' }}>
@@ -490,7 +366,7 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
           <article className="card">
             <div className="section-title">
               <h3 style={{ margin: 0 }}>Detected Skills ({matchedSkills.length})</h3>
-              <span className="pill green">Matched for {targetRole}</span>
+              <span className="pill green">Matched for {state.targetRole}</span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '14px' }}>
               These skills were extracted directly from your resume and matched against applicant rubrics.
@@ -560,12 +436,12 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
                 Check off items as you update your resume file
               </p>
             </div>
-            <span className="pill green">{completedFixes.length} of {suggestions.length} Completed</span>
+            <span className="pill green">{state.completedFixes.length} of {suggestions.length} Completed</span>
           </div>
 
           <ul className="list" style={{ marginTop: '12px' }}>
             {suggestions.map(s => {
-              const isChecked = completedFixes.includes(s.id)
+              const isChecked = state.completedFixes.includes(s.id)
               return (
                 <li
                   key={s.id}
@@ -606,8 +482,8 @@ export function AnalyzerPage({ onNavigate }: AnalyzerPageProps) {
           </ul>
 
           <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-            <button className="btn" onClick={() => alert('Resume updated! New ATS score: 94/100')}>
-              Save &amp; Recalculate Score
+            <button className="btn" onClick={handleRescan} disabled={state.isAnalyzing}>
+              {state.isAnalyzing ? 'Recalculating...' : 'Save & Recalculate Score'}
             </button>
             <button className="btn btn-secondary" onClick={() => onNavigate?.('interview')}>
               Practice Resume Defense in Mock Interview →

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { readinessApi, type ReadinessOverview } from '../lib'
+import { useResume } from '../context'
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 
@@ -8,6 +9,7 @@ interface ReadinessPageProps {
 }
 
 export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
+  const { state } = useResume()
   const [checkedActions, setCheckedActions] = useState<number[]>([1])
   const [readinessData, setReadinessData] = useState<ReadinessOverview | null>(null)
 
@@ -28,24 +30,25 @@ export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
   }
 
   const pillars = [
-    { label: 'Resume ATS Alignment', value: 92, status: 'Strong', good: true },
-    { label: 'DSA & Algorithmic Problem Solving', value: 84, status: 'Target Met', good: true },
-    { label: 'System Design & Scalability', value: 78, status: 'Needs Polish', good: false },
-    { label: 'Project Architecture & Depth', value: 88, status: 'Strong', good: true },
-    { label: 'Behavioral & STAR Communication', value: 94, status: 'Interview Ready', good: true },
+    { label: 'Resume ATS Alignment', value: state.atsScore, status: state.atsScore >= 90 ? 'Exceptional' : 'Strong', good: true },
+    { label: 'DSA & Algorithmic Problem Solving', value: state.subScores.brevity, status: 'Target Met', good: true },
+    { label: 'System Design & Scalability', value: Math.max(68, state.subScores.impact - 11), status: 'Needs Polish', good: false },
+    { label: 'Project Architecture & Depth', value: state.subScores.impact, status: state.subScores.impact >= 80 ? 'Strong' : 'Developing', good: true },
+    { label: 'Behavioral & STAR Communication', value: state.subScores.style, status: 'Interview Ready', good: true },
   ]
 
   const benchmarks = [
-    { company: 'Tier-1 Tech (Google, Microsoft, Amazon SDE)', readiness: 88, status: 'Interview Ready', gap: 'Sharpen distributed caching trade-offs' },
-    { company: 'High-Growth Tech Unicorns & AI Startups', readiness: 94, status: 'Exceptional Fit', gap: 'Showcase edge latency optimizations' },
-    { company: 'Enterprise Cloud & Fintech Engineering', readiness: 91, status: 'Strong Match', gap: 'Highlight SQL transaction consistency' },
+    { company: `Tier-1 Tech (Google, Microsoft, Amazon ${state.targetRole})`, readiness: Math.max(78, state.readinessScore - 4), status: 'Interview Ready', gap: 'Sharpen distributed caching trade-offs' },
+    { company: 'High-Growth Tech Unicorns & AI Startups', readiness: Math.min(98, state.readinessScore + 2), status: 'Exceptional Fit', gap: 'Showcase edge latency optimizations' },
+    { company: 'Enterprise Cloud & Fintech Engineering', readiness: Math.min(96, state.readinessScore - 1), status: 'Strong Match', gap: 'Highlight SQL transaction consistency' },
   ]
 
+  const firstProject = state.projects[0]?.title || 'Featured Project'
   const actions = [
     { id: 1, title: 'Complete Python & DSA Practice Round', sub: 'Dynamic Programming and Tree traversals', to: 'interview' as View },
-    { id: 2, title: 'Review Smart Crop Project Bullet Rewrites', sub: 'Add classification precision & API latency metrics', to: 'resume' as View },
+    { id: 2, title: `Review ${firstProject} Bullet Rewrites`, sub: 'Add classification precision & API latency metrics', to: 'resume' as View },
     { id: 3, title: 'Practice Distributed Rate Limiter System Case', sub: 'Token Bucket vs Leaky Bucket algorithms with Redis', to: 'roadmap' as View },
-    { id: 4, title: 'Add Architecture Decision Record to GitHub Repo', sub: 'Document choice of PyTorch in recommendation engine', to: 'github' as View },
+    { id: 4, title: 'Add Architecture Decision Record to GitHub Repo', sub: 'Document design choices and API contracts', to: 'github' as View },
   ]
 
   return (
@@ -59,16 +62,16 @@ export function ReadinessPage({ onNavigate }: ReadinessPageProps) {
               <h3 style={{ margin: 0, fontSize: '19px' }}>Campus &amp; Off-Campus Placement Readiness</h3>
             </div>
             <span className="kpi-value" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
-              {readinessData?.overall_score || 92}%
+              {readinessData?.overall_score || state.readinessScore}%
             </span>
           </div>
 
           <p style={{ fontSize: '0.84rem', color: 'var(--text-2)', maxWidth: '600px', lineHeight: 1.6 }}>
-            Overall candidate signal evaluated across 5 core competencies for <strong>Software Developer</strong> and <strong>AI/ML Engineering</strong> roles.
+            Overall candidate signal evaluated across 5 core competencies for <strong>{state.targetRole}</strong> and <strong>AI/ML Engineering</strong> roles.
           </p>
 
           <div className="metric-list" style={{ marginTop: '16px' }}>
-            {(readinessData?.pillars || pillars).map(({ label, value, status, good }) => (
+            {pillars.map(({ label, value, status, good }) => (
               <div key={label} className="metric-row" style={{ padding: '10px 0' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-1)' }}>{label}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

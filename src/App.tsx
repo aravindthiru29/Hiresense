@@ -9,6 +9,15 @@ import { ReadinessPage } from './pages/ReadinessPage'
 import { RoadmapPage } from './pages/RoadmapPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { useResume } from './context'
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase() || 'AT'
+}
 
 type View = 'home' | 'dashboard' | 'resume' | 'interview' | 'github' | 'readiness' | 'roadmap' | 'reports' | 'profile'
 type AuthScreen = 'landing' | 'login' | 'signup' | 'onboarding' | 'upload' | 'analyzing' | 'analysis' | 'assessment' | 'skill-profile' | View
@@ -77,19 +86,20 @@ const assessmentQuestions = [
 ]
 
 function App() {
+  const { state: resumeState, uploadResume } = useResume()
   const [screen, setScreen] = useState<AuthScreen>('home')
   const [isAuthenticated, setIsAuthenticated] = useState(true)
   const [onboardingStep, setOnboardingStep] = useState(1)
-  const [fullName, setFullName] = useState('Aravind T')
-  const [college, setCollege] = useState('VIT Vellore')
-  const [degree, setDegree] = useState('B.Tech')
-  const [branch, setBranch] = useState('Artificial Intelligence & Data Science')
-  const [graduationYear, setGraduationYear] = useState('2026')
-  const [targetRole, setTargetRole] = useState('Software Developer')
+  const [fullName, setFullName] = useState(resumeState.candidateName)
+  const [college, setCollege] = useState(resumeState.college)
+  const [degree, setDegree] = useState(resumeState.degree)
+  const [branch, setBranch] = useState(resumeState.branch)
+  const [graduationYear, setGraduationYear] = useState(resumeState.graduationYear)
+  const [targetRole, setTargetRole] = useState(resumeState.targetRole)
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Python', 'Java', 'SQL', 'Flask', 'Machine Learning'])
-  const [resumeName, setResumeName] = useState('Aravind_T_Resume.pdf')
-  const [resumeSize, setResumeSize] = useState('2.4 MB')
-  const [resumeUploaded, setResumeUploaded] = useState(false)
+  const [resumeName, setResumeName] = useState(resumeState.resumeFileName)
+  const [resumeSize, setResumeSize] = useState(resumeState.resumeFileSize)
+  const [resumeUploaded, setResumeUploaded] = useState(resumeState.resumeUploaded)
   const [assessmentIndex, setAssessmentIndex] = useState(0)
   const [assessmentAnswer, setAssessmentAnswer] = useState('')
 
@@ -114,12 +124,13 @@ function App() {
     )
   }
 
-  const handleResumeUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleResumeUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setResumeName(file.name)
       setResumeSize(`${(file.size / 1024 / 1024).toFixed(1)} MB`)
       setResumeUploaded(true)
+      await uploadResume(file)
       setScreen('upload')
     }
   }
@@ -413,6 +424,9 @@ function SiteHeader({
     )
   }
 
+  const { state: navState } = useResume()
+  const navInitials = getInitials(navState.candidateName)
+
   return (
     <header className="workspace-nav">
       <button className="workspace-brand" onClick={() => onNavigate('home')}>
@@ -435,15 +449,18 @@ function SiteHeader({
 
       <div className="workspace-actions">
         <div className="readiness-chip" onClick={() => onNavigate('readiness')} style={{ cursor: 'pointer' }} title="View Placement Readiness">
-          <span>●</span> 92% ready
+          <span>●</span> {navState.readinessScore}% ready
         </div>
-        <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">AT</button>
+        <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">{navInitials}</button>
       </div>
     </header>
   )
 }
 
 function WorkspaceNav({ view, onNavigate }: { view: View; onNavigate: (view: View) => void }) {
+  const { state: navState } = useResume()
+  const navInitials = getInitials(navState.candidateName)
+
   return (
     <header className="workspace-nav">
       <button className="workspace-brand" onClick={() => onNavigate('home')}>
@@ -466,9 +483,9 @@ function WorkspaceNav({ view, onNavigate }: { view: View; onNavigate: (view: Vie
 
       <div className="workspace-actions">
         <div className="readiness-chip" onClick={() => onNavigate('readiness')} style={{ cursor: 'pointer' }} title="View Placement Readiness">
-          <span>●</span> 92% ready
+          <span>●</span> {navState.readinessScore}% ready
         </div>
-        <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">AT</button>
+        <button className="workspace-avatar" onClick={() => onNavigate('profile')} aria-label="Open profile">{navInitials}</button>
       </div>
     </header>
   )
@@ -815,10 +832,10 @@ function AnalysisLoadingScreen() {
 }
 
 function ResumeAnalysisScreen({
-  fullName,
-  degree,
-  branch,
-  targetRole,
+  fullName: _fullName,
+  degree: _degree,
+  branch: _branch,
+  targetRole: _targetRole,
   onContinue,
 }: {
   fullName: string
@@ -827,19 +844,13 @@ function ResumeAnalysisScreen({
   targetRole: string
   onContinue: () => void
 }) {
-  const detectedSkills = ['Python', 'Java', 'SQL', 'Flask', 'JavaScript', 'Git', 'Machine Learning']
-  const projects = [
-    {
-      name: 'Smart Crop Monitoring',
-      stack: 'Python, Flask, OpenCV',
-      description: 'Built a predictive crop-health dashboard for farmers using image-based insights and monitoring workflows.',
-    },
-    {
-      name: 'Recommendation Engine',
-      stack: 'Python, SQL, Machine Learning',
-      description: 'Developed a personalized recommendation system that improved user relevance signals across product experiences.',
-    },
-  ]
+  const { state } = useResume()
+  const detectedSkills = state.skills.map(s => s.name)
+  const projects = state.projects.map(project => ({
+    name: project.title,
+    stack: project.stack,
+    description: project.summary,
+  }))
 
   return (
     <section className="resume-analysis-shell">
@@ -848,17 +859,17 @@ function ResumeAnalysisScreen({
           <p className="eyebrow">Initial profile</p>
           <h2>Your initial career profile</h2>
         </div>
-        <span className="profile-pill">{targetRole}</span>
+        <span className="profile-pill">{state.targetRole}</span>
       </div>
 
       <div className="profile-summary-card">
         <div>
-          <h3>{fullName}</h3>
-          <p>{degree} • {branch}</p>
+          <h3>{state.candidateName}</h3>
+          <p>{state.degree} • {state.branch}</p>
         </div>
         <div className="meta-box">
           <span>Target Role</span>
-          <strong>{targetRole}</strong>
+          <strong>{state.targetRole}</strong>
         </div>
       </div>
 
@@ -867,9 +878,9 @@ function ResumeAnalysisScreen({
           <h3>Education</h3>
           <div className="project-list">
             <div className="project-item">
-              <strong>{degree}</strong>
-              <span>{branch}</span>
-              <p>{fullName ? 'Graduation year: 2026' : 'Graduation year available'}</p>
+              <strong>{state.degree}</strong>
+              <span>{state.branch}</span>
+              <p>Graduation year: {state.graduationYear} · {state.college}</p>
             </div>
           </div>
         </div>
@@ -899,17 +910,17 @@ function ResumeAnalysisScreen({
         </div>
 
         <div className="result-card">
-          <h3>Experience & Certifications</h3>
+          <h3>Experience &amp; Certifications</h3>
           <div className="project-list">
             <div className="project-item">
               <strong>Experience</strong>
-              <span>Internship & project work</span>
-              <p>Strong project exposure across Python development, ML workflows, and application engineering.</p>
+              <span>Internship &amp; project work</span>
+              <p>Strong project exposure across {state.targetRole} workflows and application engineering.</p>
             </div>
             <div className="project-item">
               <strong>Certifications</strong>
               <span>Detected signals</span>
-              <p>Core technical coursework and project-based learning aligned with the selected target role.</p>
+              <p>Core technical coursework and project-based learning aligned with {state.targetRole}.</p>
             </div>
           </div>
         </div>
@@ -917,10 +928,10 @@ function ResumeAnalysisScreen({
 
       <div className="score-grid">
         {[
-          ['Resume Strength', '82 / 100'],
-          ['Technical Profile', '76 / 100'],
-          ['Project Strength', '84 / 100'],
-          ['ATS Compatibility', '79 / 100'],
+          ['Resume Strength', `${state.atsScore} / 100`],
+          ['Technical Profile', `${state.subScores.skills} / 100`],
+          ['Project Strength', `${state.subScores.impact} / 100`],
+          ['ATS Compatibility', `${state.atsScore} / 100`],
         ].map(([label, value]) => (
           <div key={label} className="score-card">
             <span>{label}</span>
@@ -929,7 +940,7 @@ function ResumeAnalysisScreen({
         ))}
       </div>
 
-      <p className="analysis-card-prompt">These are resume-derived indicators. They help estimate your current profile before live skill verification through assessment.</p>
+      <p className="analysis-card-prompt">These are resume-derived indicators from {state.resumeFileName}. They help estimate your current profile before live skill verification through assessment.</p>
 
       <div className="analysis-actions">
         <button className="primary-action" onClick={onContinue}>Start Personalized Assessment →</button>
@@ -978,12 +989,13 @@ function AssessmentScreen({
 }
 
 function ProfileSummaryScreen({ onContinue }: { onContinue: () => void }) {
+  const { state } = useResume()
   const skills = [
-    ['Technical Knowledge', '72'],
-    ['Problem Solving', '68'],
-    ['Communication', '77'],
-    ['Project Understanding', '84'],
-    ['Adaptability', '71'],
+    ['Technical Knowledge', String(state.subScores.skills)],
+    ['Problem Solving', String(state.subScores.brevity)],
+    ['Communication', String(state.subScores.style)],
+    ['Project Understanding', String(state.subScores.impact)],
+    ['Overall Signal', String(state.readinessScore)],
   ]
 
   return (
@@ -1005,7 +1017,7 @@ function ProfileSummaryScreen({ onContinue }: { onContinue: () => void }) {
           <h3>Skill gap signals</h3>
           <div className="growth-row"><span>Strong</span><strong>Python, OOP, Project Understanding</strong></div>
           <div className="growth-row"><span>Needs improvement</span><strong>DSA, SQL Optimization</strong></div>
-          <div className="growth-row"><span>Gap to address</span><strong>System Design</strong></div>
+          <div className="growth-row"><span>Gap to address</span><strong>{state.gapSkills[0]?.name || 'System Design'}</strong></div>
         </div>
 
         <div className="verification-card">
@@ -1020,30 +1032,18 @@ function ProfileSummaryScreen({ onContinue }: { onContinue: () => void }) {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Python</td>
-                <td>Advanced</td>
-                <td>Intermediate</td>
-                <td><span className="status developing">Developing</span></td>
-              </tr>
-              <tr>
-                <td>SQL</td>
-                <td>Intermediate</td>
-                <td>Strong</td>
-                <td><span className="status verified">Verified</span></td>
-              </tr>
-              <tr>
-                <td>Java</td>
-                <td>Intermediate</td>
-                <td>Intermediate</td>
-                <td><span className="status verified">Verified</span></td>
-              </tr>
-              <tr>
-                <td>Machine Learning</td>
-                <td>Intermediate</td>
-                <td>Needs assessment</td>
-                <td><span className="status pending">Pending</span></td>
-              </tr>
+              {state.skills.slice(0, 5).map(s => (
+                <tr key={s.name}>
+                  <td>{s.name}</td>
+                  <td>{s.resumeClaim || 'Intermediate'}</td>
+                  <td>{s.demonstrated || 'Intermediate'}</td>
+                  <td>
+                    <span className={`status ${s.status || 'verified'}`}>
+                      {(s.status || 'verified').charAt(0).toUpperCase() + (s.status || 'verified').slice(1)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
